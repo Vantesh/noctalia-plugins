@@ -1,0 +1,22 @@
+{
+  "settings": {
+    "config": {
+      "label": "Hyprland Lua configuration",
+      "description": "Main file to scan, following literal imports without executing Lua."
+    },
+    "super": {
+      "label": "Super key representation",
+      "description": "Choose the Windows logo, macOS Command symbol, Linux logo, or Super text.",
+      "windows": "",
+      "apple": "⌘",
+      "linux": "",
+      "text": "Super"
+    },
+    "icons": {
+      "label": "Icon style",
+      "auto": "Automatic (recommended)",
+      "nerd": "Nerd Font",
+      "text": "Text"
+    }
+  }
+}

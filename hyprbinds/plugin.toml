@@ -1,0 +1,61 @@
+id = "vantesh/hyprbinds"
+name = "Hyprland Keybindings"
+version = "0.1.4"
+plugin_api = 33
+author = "vantesh"
+license = "MIT"
+icon = "keyboard"
+description = "A read-only cheatsheet of your Hyprland Lua shortcuts."
+tags = ["hyprland", "bar", "panel", "launcher", "utility"]
+dependencies = ["fontconfig", "nerd-fonts"]
+
+[[widget]]
+id = "hyprbinds"
+entry = "widget.luau"
+
+[[launcher_provider]]
+id = "launcher"
+entry = "launcher.luau"
+prefix = "hyprbinds"
+glyph = "keyboard"
+
+[[panel]]
+id = "cheatsheet"
+entry = "panel.luau"
+width = 1400
+height = 860
+placement = "floating"
+position = "center"
+keyboard_focus = "exclusive"
+
+[[panel.setting]]
+key = "config_path"
+type = "file"
+label_key = "settings.config.label"
+description_key = "settings.config.description"
+default = "~/.config/hypr/hyprland.lua"
+extensions = [".lua"]
+
+[[panel.setting]]
+key = "super_style"
+type = "select"
+label_key = "settings.super.label"
+description_key = "settings.super.description"
+default = "windows"
+options = [
+  { value = "windows", label_key = "settings.super.windows" },
+  { value = "apple", label_key = "settings.super.apple" },
+  { value = "linux", label_key = "settings.super.linux" },
+  { value = "text", label_key = "settings.super.text" },
+]
+
+[[panel.setting]]
+key = "icon_style"
+type = "select"
+label_key = "settings.icons.label"
+default = "auto"
+options = [
+  { value = "auto", label_key = "settings.icons.auto" },
+  { value = "nerd", label_key = "settings.icons.nerd" },
+  { value = "text", label_key = "settings.icons.text" },
+]
