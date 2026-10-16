@@ -57,3 +57,5 @@ harmless fixtures, not real upgrades.
 ## License
 
 [MIT](LICENSE). See each plugin for additional notices and attribution.
+
+Temporary catalog guard verification.
