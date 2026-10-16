@@ -1,4 +1,16 @@
 [[plugin]]
+id = "vantesh/hyprbinds"
+name = "Hyprland Keybindings"
+version = "0.1.4"
+plugin_api = 33
+author = "vantesh"
+license = "MIT"
+icon = "keyboard"
+description = "A read-only cheatsheet of your Hyprland Lua shortcuts."
+tags = ["hyprland", "bar", "panel", "launcher", "utility"]
+dependencies = ["fontconfig", "nerd-fonts"]
+
+[[plugin]]
 id = "vantesh/topgrade-updater"
 name = "Topgrade Updater"
 version = "0.1.0"
