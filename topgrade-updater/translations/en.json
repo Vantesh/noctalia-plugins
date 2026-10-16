@@ -1,0 +1,25 @@
+{
+  "title": "Topgrade Updater",
+  "notify_updates": {
+    "one": "1 package to upgrade",
+    "other": "{count} packages to upgrade"
+  },
+  "settings": {
+    "update_cmd": "Update command",
+    "update_cmd_description": "Trusted shell command run only by Update. A selected configuration is appended as a quoted --config argument. Checks always use Topgrade dry-run. The default uses --notify-end never to suppress Topgrade completion notifications.",
+    "terminal_cmd": "Terminal launch command",
+    "terminal_cmd_description": "Empty uses Noctalia terminal detection. Trusted shell prefix, e.g. xdg-terminal-exec --title=\"System Update\" or kitty -e. The plugin appends sh -c and the safely quoted supervised update; include any terminal command separator yourself.",
+    "config": "Topgrade configuration",
+    "config_description": "Empty uses Topgrade's own configuration lookup. Used by discovery and appended to the update command as a safely quoted --config argument.",
+    "auto": "Automatic check interval (hours)",
+    "auto_description": "Checks Pacman/AUR after 10 seconds and periodically thereafter. Zero disables automatic checks.",
+    "notify_on_updates": "Notify when updates are found",
+    "notify_on_updates_description": "Notify once when a fully successful check finds Pacman/AUR updates, using Noctalia's normal notification sound settings. Failed, incomplete, empty, or dismissed checks stay silent. A new scheduled or manual check clears dismissal.",
+    "download_size": "Show estimated download size",
+    "download_size_description": "Estimate pending Pacman repository package sizes from local sync metadata. Excludes AUR, includes cached packages, and may be stale. Missing metadata hides the estimate without affecting counts.",
+    "glyph": "Widget glyph",
+    "glyph_description": "Noctalia native glyph name for the bar widget (default: pacman). For example, package.",
+    "hide": "Hide when Pacman/AUR are up to date",
+    "hide_description": "Enabled by default; hide when the displayed Pacman/AUR total is missing or zero, even during checks, updates, or uncertain results. Positive incomplete counts stay visible with a warning. Disable to keep empty results visible; dismissal still hides the widget."
+  }
+}

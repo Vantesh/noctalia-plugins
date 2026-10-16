@@ -1,0 +1,11 @@
+[[plugin]]
+id = "vantesh/topgrade-updater"
+name = "Topgrade Updater"
+version = "0.1.0"
+plugin_api = 33
+author = "vantesh"
+license = "MIT"
+icon = "package"
+description = "Count Pacman/AUR packages and run full configured Topgrade in a terminal."
+tags = ["bar", "panel", "service", "system", "utility"]
+dependencies = ["topgrade", "env", "flock", "sh", "mktemp", "stat", "id"]
