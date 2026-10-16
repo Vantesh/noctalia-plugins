@@ -1,3 +1,5 @@
+# Generated from plugin manifests; do not edit.
+
 [[plugin]]
 id = "vantesh/hyprbinds"
 name = "Hyprland Keybindings"
