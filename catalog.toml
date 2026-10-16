@@ -23,3 +23,5 @@ icon = "package"
 description = "Count Pacman/AUR packages and run full configured Topgrade in a terminal."
 tags = ["bar", "panel", "service", "system", "utility"]
 dependencies = ["topgrade", "env", "flock", "sh", "mktemp", "stat", "id"]
+
+# Temporary guard rejection check.
