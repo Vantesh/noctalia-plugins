@@ -1,0 +1,69 @@
+name: Catalog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*/plugin.toml"
+      - "catalog.toml"
+      - ".github/scripts/update-catalog.py"
+      - ".github/workflows/catalog.yml"
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Catalog PR guard
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reject catalog changes
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags origin "refs/pull/$PR_NUMBER/head"
+          if ! git diff --quiet "$BASE_SHA...$HEAD_SHA" -- catalog.toml; then
+            echo '::error::Do not change catalog.toml in PRs. Edit plugin.toml instead; main generates the catalog.'
+            exit 1
+          fi
+
+  catalog:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    concurrency:
+      group: catalog-main
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          ssh-key: ${{ secrets.CATALOG_DEPLOY_KEY }}
+      - name: Regenerate catalog
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            python3 .github/scripts/update-catalog.py
+            git diff --quiet -- catalog.toml && exit 0
+            git add catalog.toml
+            git commit -m 'chore(catalog): sync plugin metadata [skip ci]'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+          done
+          exit 1

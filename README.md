@@ -28,8 +28,9 @@ Once merged, use the Git source instead:
 noctalia msg plugins source add noctalia-plugins git https://github.com/Vantesh/noctalia-plugins
 ```
 
-`catalog.toml` is maintained by hand for Git-source discovery. Keep entries in
-sync with the manifests of plugins present on the branch.
+`catalog.toml` is generated after merges to `main`; the PR check rejects changes
+to it. Edit `plugin.toml` instead. For a local preview, run
+`python3 .github/scripts/update-catalog.py` (Python 3.11+); keep the output out of PRs.
 
 ## Local validation
 
