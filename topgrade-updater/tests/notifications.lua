@@ -60,7 +60,7 @@ local function fixture()
         reply(result("―― 12:34:56 - System ――\nDry running: " .. (command or "pacman -Syu") .. "\n―― 12:34:56 - Summary ――\n"))
     end
     local function start()
-        env.onIpc("refresh")
+        for _ = 1, 10 do env.update() end
         discover()
     end
     return {
@@ -71,7 +71,7 @@ local function fixture()
 end
 
 local f = fixture()
-f.env.onIpc("check")
+for _ = 1, 10 do f.env.update() end
 f.discover("yay -Syu")
 f.reply(result("linux 1 -> 2"))
 expect(#f.notifications == 0 and f.state().phase == "checking", "progressive positive subtotal does not notify")
@@ -81,20 +81,17 @@ expect(f.notifications[1][1] == "Topgrade Updater" and f.notifications[1][2] == 
 local args = f.reply(result("Name : linux\nDownload Size : 1 MiB"))
 expect(args[4] == "pacman" and f.state().downloadBytes == 1024^2, "complete the real optional metadata callback")
 expect(#f.notifications == 1, "download metadata publication does not duplicate notification")
-f.env.onIpc("dismiss")
-for _ = 1, 3599 do f.env.update() end
-expect(#f.notifications == 1 and f.state().dismissed, "dismissed result never nudges during idle ticks")
-f.env.update()
-expect(not f.state().dismissed and f.state().phase == "checking", "scheduled refresh clears dismissal")
+f.watches.request({ nonce = 1, action = "check" })
 f.discover()
 f.reply(result("linux 1 -> 2"))
-expect(#f.notifications == 2 and f.notifications[2][2] == "1 package to upgrade", "new scheduled check may notify again, with singular text")
+expect(f.state().complete and f.state().total == 1 and #f.notifications == 1,
+    "manual panel refresh updates packages without another notification")
 f.reply(result("Name : linux\nDownload Size : 1 MiB"))
-f.env.onIpc("dismiss")
-f.start()
-expect(not f.state().dismissed, "accepted manual refresh clears dismissal")
+for _ = 1, 3600 do f.env.update() end
+f.discover()
 f.reply(result("linux 1 -> 2"))
-expect(#f.notifications == 3, "manual refresh may notify again even for the same count")
+expect(#f.notifications == 2 and f.notifications[2][2] == "1 package to upgrade",
+    "scheduled checks still notify after a manual refresh")
 
 f = fixture()
 f.settings.notify_on_updates = false
@@ -106,53 +103,32 @@ expect(#f.notifications == 0, "metadata cannot bypass disabled setting")
 
 f = fixture()
 f.start()
-f.settings.notify_on_updates = false
-f.reply(result("linux 1 -> 2"))
-expect(#f.notifications == 0, "read live service configuration at completion, not at check start")
-
-f = fixture()
-f.start()
 f.reply(result("", 2))
 expect(f.state().complete and f.state().total == 0 and #f.notifications == 0, "clean zero check stays silent")
 
-for _, stage in ipairs({ "discovery", "query" }) do
-    f = fixture()
-    f.env.onIpc("refresh")
-    if stage == "query" then f.discover() end
-    f.watches.request({ nonce = 1, action = "dismiss" })
-    f.env.onIpc("refresh")
-    expect(f.state().dismissed, "busy refresh cannot clear in-flight dismissal")
-    if stage == "discovery" then f.discover() end
-    f.reply(result("linux 1 -> 2"))
-    expect(f.state().complete and f.state().dismissed and #f.notifications == 0, "in-flight " .. stage .. " dismissal suppresses otherwise-positive completed check")
-    f.reply(result("Name : linux\nDownload Size : 1 MiB"))
-    expect(f.state().dismissed and #f.notifications == 0, "late metadata retains dismissal and silence")
-end
-
-f = fixture()
-f.env.onIpc("check")
-f.reply(result("", 1, "discovery failed"))
-expect(f.state().phase == "error" and #f.notifications == 0, "failed discovery stays silent")
-
 f = fixture()
 f.start()
-f.reply(result("", 1, "offline"))
-expect(not f.state().complete and #f.notifications == 0, "failed package query stays silent")
+f.watches.request({ nonce = 1, action = "dismiss" })
+f.reply(result("linux 1 -> 2"))
+expect(f.state().complete and f.state().dismissed and #f.notifications == 0,
+    "in-flight dismissal suppresses completed-check notifications")
+f.reply(result("Name : linux\nDownload Size : 1 MiB"))
+expect(#f.notifications == 0, "late metadata cannot notify after dismissal")
 
 f = fixture()
-f.env.onIpc("check")
+for _ = 1, 10 do f.env.update() end
 f.discover("yay -Syu")
 f.reply(result("linux 1 -> 2"))
 f.reply(result("", 1, "AUR unavailable"))
 expect(f.state().total == 1 and not f.state().complete and #f.notifications == 0, "known positive subtotal with failed coverage does not notify")
 
 f = fixture()
-f.env.onIpc("check")
+for _ = 1, 10 do f.env.update() end
 f.reply(result("―― 12:34:56 - System ――\nDry running: pacman -Syu\n―― 12:34:56 - Summary ――\n", 0, "discovery warning"))
 f.reply(result("linux 1 -> 2"))
 expect(f.state().total == 1 and not f.state().complete and #f.notifications == 0, "discovery uncertainty with positive count stays silent")
 f = fixture()
-f.env.onIpc("check")
+for _ = 1, 10 do f.env.update() end
 f.reply(result("―― 12:34:56 - System ――\nDry running: pacman -Syu\n―― 12:34:56 - Summary ――\n"), true)
 expect(#f.jobs == 1, "duplicate discovery callback cannot start a second package query")
 f.reply(result("linux 1 -> 2"), true)

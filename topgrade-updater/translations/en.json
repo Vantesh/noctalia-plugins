@@ -14,7 +14,7 @@
     "auto": "Automatic check interval (hours)",
     "auto_description": "Checks Pacman/AUR after 10 seconds and periodically thereafter. Zero disables automatic checks.",
     "notify_on_updates": "Notify when updates are found",
-    "notify_on_updates_description": "Notify once when a fully successful check finds Pacman/AUR updates, using Noctalia's normal notification sound settings. Failed, incomplete, empty, or dismissed checks stay silent. A new scheduled or manual check clears dismissal.",
+    "notify_on_updates_description": "Notify when a fully successful automatic check finds Pacman/AUR updates, using Noctalia's normal notification sound settings. Manual refreshes and failed, incomplete, empty, or dismissed checks stay silent.",
     "download_size": "Show estimated download size",
     "download_size_description": "Estimate pending Pacman repository package sizes from local sync metadata. Excludes AUR, includes cached packages, and may be stale. Missing metadata hides the estimate without affecting counts.",
     "glyph": "Widget glyph",

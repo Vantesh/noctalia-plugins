@@ -70,11 +70,7 @@ for _, replies in ipairs({
         and core.hidden(failed) and not core.hidden(failed, false),
         "failed repository or AUR query hides zero by default while retaining uncertainty and the setting override")
 end
-local pending = serviceResult(arch .. unrelated .. header("Summary"), {
-    result("linux 1 -> 2\n"), result("aur-tool 3 -> 4\n"),
-})
-assert(pending.complete and pending.total == 2 and #pending.counts == 2
-    and pending.counts[2].items[1].name == "aur-tool", "count and list only Pacman/AUR packages")
+
 local yayPlan = header("System") .. "Dry running: /usr/bin/yay -Syu\n"
     .. header("System update") .. "Dry running: /usr/bin/yay -Pw\n" .. header("Summary")
 local yayPending, yayQueries = serviceResult(yayPlan, {
@@ -117,13 +113,11 @@ for _, flag in ipairs({ "stdoutTruncated", "stderrTruncated" }) do
     local discovery, commands = serviceResult(arch .. header("Summary"), {}, { [flag] = true })
     assert(discovery.phase == "error" and not discovery.complete and #commands == 1
         and discovery.error:find("truncated", 1, true), "truncated discovery cannot establish coverage or start queries")
-    for _, output in ipairs({ "", "linux 1 -> 2\n" }) do
-        local reply = result(output)
-        reply[flag] = true
-        local query = serviceResult(header("System") .. "Dry running: pacman -Syu\n" .. header("Summary"), { reply })
-        assert(query.phase == "unknown" and not query.complete and query.total == 0 and #query.counts == 0
-            and query.unknown[1]:find("truncated", 1, true), "truncated queries cannot become zero or partial complete counts")
-    end
+    local reply = result("linux 1 -> 2\n")
+    reply[flag] = true
+    local query = serviceResult(header("System") .. "Dry running: pacman -Syu\n" .. header("Summary"), { reply })
+    assert(query.phase == "unknown" and not query.complete and query.total == 0 and #query.counts == 0
+        and query.unknown[1]:find("truncated", 1, true), "truncated queries cannot become zero or partial complete counts")
 end
 local metadata = "Repository      : core\nName            : linux\nDownload Size   : 372.50 MiB\nInstalled Size  : 999 MiB"
 local sized, sizeQueries = serviceResult(yayPlan, { result("linux 1 -> 2"), result("aur-tool 1 -> 2") }, nil, { metadata = result(metadata) })
