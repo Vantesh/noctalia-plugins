@@ -43,7 +43,7 @@ noctalia msg plugin vantesh/topgrade-updater:service all refresh
 | `terminal_cmd`       | Empty                                             | Auto-detect; otherwise a launch prefix, e.g. `kitty -e`    |
 | `topgrade_config`    | Empty                                             | Normal lookup; otherwise append `--config PATH`            |
 | `auto_check_hours`   | `6`                                               | Check interval, 0–168 hours; `0` disables automatic checks |
-| `notify_on_updates`  | `true`                                            | Notify after complete checks find updates                  |
+| `notify_on_updates`  | `true`                                            | Notify when automatic checks find updates                  |
 | `show_download_size` | `true`                                            | Estimated Pacman archive sizes, not remaining traffic      |
 | `glyph`              | `pacman`                                          | Per-widget icon                                            |
 | `hide_on_empty`      | `true`                                            | Per-widget hiding for missing/non-positive counts          |

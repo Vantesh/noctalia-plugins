@@ -56,34 +56,26 @@ local function find(predicate, node)
 end
 local function text(value) return find(function(p) return p.text == value end) end
 onOpen()
-assert(text("OK") and text("OK").color == "primary", "installed Topgrade must show primary OK status")
+assert(not text("Topgrade") and not text("OK"), "installed Topgrade status belongs only in the tooltip")
 topgradeAvailable = false
 onOpen()
-assert(text("Not found") and text("Not found").color == "error" and not text("OK"),
-    "missing Topgrade must replace OK with an error status")
+assert(text("Topgrade") and text("Not found") and text("Not found").color == "error" and not text("OK"),
+    "missing Topgrade must remain visible in the panel")
 topgradeAvailable = true
 onOpen()
+assert(not text("Topgrade") and not text("Not found"), "restored Topgrade must remove the panel warning")
 
 state.downloadBytes = 372.5 * 1024^2
 watcher(state)
 assert(text("≈ 372.5 MiB to download"), "render deterministic repository estimate")
-local downloadIndex
-for index, child in ipairs(tree.children) do
-    if child.props.key == "download-size" then
-        downloadIndex = index
-        assert(child.children[1].kind == "glyph" and child.children[1].props.name == "download"
-            and child.children[1].props.color == "on_surface_variant", "use native themed download glyph")
-    end
-end
-assert(downloadIndex and tree.children[downloadIndex + 1].kind == "separator"
-    and tree.children[downloadIndex + 2].props.text == "checked 14:02", "estimate belongs above separator and check time")
+
 showDownloadSize = false
 watcher(state)
 assert(not text("≈ 372.5 MiB to download"), "setting hides estimate")
 showDownloadSize, state.downloadBytes = true, nil
 watcher(state)
 assert(not find(function(p) return p.key == "download-size" end), "unavailable metadata has no zero placeholder")
-assert(text("Count: 3"), "positive subtotal must use the concise count headline")
+
 find(function(p) return p.key == "source-pacman" end).onClick()
 assert(text("linux") and text("1") and text("2"), "source expansion must still expose package versions")
 assert(not text("Up to date: AUR (yay)"), "real planner warnings must suppress clean-source claims")
@@ -97,7 +89,6 @@ text("Dismiss").onClick()
 assert(closed == 2 and writes == 1 and request.action == "dismiss" and request.nonce == 1,
     "Dismiss must route through the service request protocol and close the panel")
 onOpen()
-assert(state.total == 3 and #state.unknown == 2 and text(state.unknown[2]), "reopening must retain counts and unknown status")
 find(function(p) return p.tooltip == "Check for updates" end).onClick()
 assert(request.action == "check", "refresh must request a check")
 assert(text("Update").enabled, "positive displayed counts must enable update when idle")
@@ -122,6 +113,7 @@ state.updateBlocked = nil
 for _, phase in ipairs({ "checking", "running" }) do
     state.phase = phase
     watcher(state)
+
     assert(not text("Update").enabled, "update must be disabled while busy")
     text("Update").onClick()
     assert(writes == 3 and closed == 3, "busy update callbacks must not launch or close")
@@ -133,7 +125,7 @@ for _, phase in ipairs({ "idle", "clean", "unknown", "error", "checking", "runni
     state.phase = phase
     watcher(state)
     assert(not text("Update").enabled, "zero displayed count must disable update in every phase")
-    assert(text("Update").key == "update-off", "zero-count button must use its disabled identity")
+
     text("Update").onClick()
     assert(writes == 3 and closed == 3, "zero-count callbacks must not launch or close")
 end

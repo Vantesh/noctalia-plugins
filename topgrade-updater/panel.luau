@@ -16,7 +16,7 @@ end
 
 local function headline(s)
     if s.phase == "error" then return s.error or s.updateError or "Check failed", "error" end
-    if s.phase == "checking" then return "Checking: " .. (s.step or "Topgrade sources"), "secondary" end
+    if s.phase == "checking" then return "Checking packages with Topgrade", "secondary" end
     if s.phase == "running" then return "Updating in terminal…", "secondary" end
     if s.total > 0 then return "Count: " .. tostring(s.total), "primary" end
     if s.phase == "clean" and s.complete then
@@ -33,7 +33,7 @@ render = function()
     local canUpdate = canCheck and s.total > 0
     local unknown = s.unknown or {}
     local text, color = headline(s)
-    local topgradeAvailable = noctalia.commandExists("topgrade")
+
     local rows = {
         ui.row({ gap = 8, align = "center" }, {
             ui.label({ text = "Topgrade Updater", fontWeight = "bold", fontSize = 16, color = "on_surface", flexGrow = 1 }),
@@ -47,15 +47,14 @@ render = function()
                 onClick = function() panel.close() end,
             }),
         }),
-        ui.row({ gap = 8, align = "center" }, {
-            ui.label({ text = "Topgrade", color = "on_surface_variant", fontSize = 11, flexGrow = 1 }),
-            ui.label({
-                text = topgradeAvailable and "OK" or "Not found",
-                color = topgradeAvailable and "primary" or "error", fontSize = 11,
-            }),
-        }),
-        ui.label({ text = text, color = color, maxLines = 3 }),
     }
+    if not noctalia.commandExists("topgrade") then
+        table.insert(rows, ui.row({ gap = 8, align = "center" }, {
+            ui.label({ text = "Topgrade", color = "on_surface_variant", fontSize = 11, flexGrow = 1 }),
+            ui.label({ text = "Not found", color = "error", fontSize = 11 }),
+        }))
+    end
+    table.insert(rows, ui.label({ text = text, color = color, maxLines = 3 }))
     if s.updateError and (s.phase ~= "error" or s.error) then
         table.insert(rows, ui.label({ text = s.updateError, color = "error", maxLines = 3 }))
     end

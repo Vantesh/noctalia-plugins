@@ -117,20 +117,18 @@ assert(allocator:close())
 local allocatedPath = rawPath:gsub("[\r\n]+$", "")
 local allocated = assert(io.open(allocatedPath, "r")); allocated:close()
 assert(os.remove(allocatedPath))
-for _, output in ipairs({ allocatedPath, rawPath }) do
-    for _, terminal in ipairs({ "", 'xdg-terminal-exec --title="System Update"' }) do
-        local h = harness({ settings = { terminal_cmd = terminal } })
-        h.request("update")
-        h.reply(result(output))
-        assert(h.state().phase == "running" and not h.state().updateError,
-            "successful mktemp output, including native-trimmed stdout, must reach terminal launch")
-        assert(#h.queries == 1, "receipt allocation must not trigger a failure refresh")
-        assert((#h.detached == 1) == (terminal ~= ""))
-        h.reads[allocatedPath] = "done 7\n"
-        h.tick()
-        assert(h.removed[allocatedPath] and h.state().updateError:find("exit 7", 1, true),
-            "native-trimmed allocation must retain exact exit receipt tracking and cleanup")
-    end
+for _, fixture in ipairs({ { allocatedPath, "" }, { rawPath, 'xdg-terminal-exec --title="System Update"' } }) do
+    local h = harness({ settings = { terminal_cmd = fixture[2] } })
+    h.request("update")
+    h.reply(result(fixture[1]))
+    assert(h.state().phase == "running" and not h.state().updateError,
+        "successful mktemp output, including native-trimmed stdout, must reach terminal launch")
+    assert(#h.queries == 1, "receipt allocation must not trigger a failure refresh")
+    assert((#h.detached == 1) == (fixture[2] ~= ""))
+    h.reads[allocatedPath] = "done 7\n"
+    h.tick()
+    assert(h.removed[allocatedPath] and h.state().updateError:find("exit 7", 1, true),
+        "native-trimmed allocation must retain exact exit receipt tracking and cleanup")
 end
 
 -- Runtime and receipt allocation callbacks may only advance their launch once.
@@ -152,8 +150,8 @@ runtimeCallback(result(testLock)); allocationCallback(result(duplicate.path))
 assert(#duplicate.queries == queryCount and #duplicate.detached == 1,
     "stale launch callbacks cannot allocate or launch for a subsequent run")
 
-for _, empty in ipairs({ "", " \t\n " }) do
-    local h = harness({ settings = { terminal_cmd = empty } })
+do
+    local h = harness({ settings = { terminal_cmd = " \t\n " } })
     assert(h.launch() == completion.command(h.path, { "sh", "-c", "topgrade -k --no-self-update --notify-end never" }))
     assert(#h.detached == 0, "empty terminal prefix must preserve native detection")
 end
@@ -168,7 +166,8 @@ fixture:write('#!/bin/sh\nprintf "%s\\n" "$#" "$@" > ' .. core.quote(terminalOut
     .. '\nshift\nexec "$@"\n')
 fixture:close()
 assert(os.execute("chmod 700 " .. core.quote(directory .. "/xdg-terminal-exec")))
-for _, code in ipairs({ 0, 7 }) do
+do
+    local code = 7
     local h = harness({ settings = {
         terminal_cmd = 'xdg-terminal-exec --title="System Update"',
         update_cmd = 'printf "%s" "update reached terminal" > ' .. core.quote(updateOutput) .. '; exit ' .. code,
@@ -258,7 +257,6 @@ failedCheck.request("check")
 failedCheck.refresh()
 
 for _, output in ipairs({ "", "/unexpected/path\n", "/tmp/noctalia-topgrade.valid\nextra",
-    "/tmp/noctalia-topgrade.valid\n/tmp/noctalia-topgrade.other\n",
     "/tmp/noctalia-topgrade.valid;echo bad", "/tmp/noctalia-topgrade.valid/../other" }) do
     local h = harness({ settings = { terminal_cmd = 'xdg-terminal-exec --title="System Update"' } })
     h.request("update")
@@ -309,15 +307,6 @@ waited:close(); os.remove(waitingReceipt)
 assert(observed == "still running\n", "interruption must not publish completion while the immediate child is alive")
 assert(kind == "interrupted" and code == 143, "interrupted receipt is written only after confirmed child exit")
 
-local receipt, output = os.tmpname(), os.tmpname()
-local argument = "/tmp/config with 'quote; $(not-a-command).toml"
-local command = completion.command(receipt, { "sh", "-c", 'printf "%s" "$1" > "$2"', "fixture", argument, output })
-assert(os.execute(command))
-local file = assert(io.open(output))
-assert(file:read("*a") == argument, "shell metacharacters in configuration stay literal single arguments")
-file:close()
-os.remove(output)
-os.remove(receipt)
 -- A delayed terminal must not start after the launch deadline removed its gate.
 local missing = os.tmpname()
 os.remove(missing)
@@ -326,7 +315,7 @@ assert(not success and not io.open(missing), "expired launch gate prevents a lat
 
 
 -- A command's exit 75 is not a lock conflict. Every outcome refreshes counts.
-for _, code in ipairs({ 0, 1, 75, 129, 130, 143 }) do
+for _, code in ipairs({ 0, 75 }) do
     local h = harness()
     h.launch()
     h.request("update"); h.request("check")

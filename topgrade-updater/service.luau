@@ -64,7 +64,7 @@ local function fail(message)
     publish()
 end
 
-local function check(updateError)
+local function check(updateError, automatic)
     if recovering or state.phase == "checking" or state.phase == "running" then return end
     generation = generation + 1
     local token = generation
@@ -133,7 +133,7 @@ local function check(updateError)
                 publish()
                 -- Notify only verified totals, once at check completion; never on
                 -- progressive publications or optional download metadata results.
-                if state.complete and state.total > 0 and not state.dismissed
+                if automatic and state.complete and state.total > 0 and not state.dismissed
                     and noctalia.getConfig("notify_on_updates") == true then
                     noctalia.notify(noctalia.tr("title"), noctalia.trp("notify_updates", state.total, { count = state.total }))
                 end
@@ -343,7 +343,7 @@ function update()
     pollRecovery()
     elapsed, startup = elapsed + 1, startup + 1
     local hours = tonumber(noctalia.getConfig("auto_check_hours")) or 0
-    if hours > 0 and ((startup >= 10 and state.phase == "idle") or elapsed >= hours * 3600) then check() end
+    if hours > 0 and ((startup >= 10 and state.phase == "idle") or elapsed >= hours * 3600) then check(nil, true) end
 end
 
 function onIpc(event, _payload)
