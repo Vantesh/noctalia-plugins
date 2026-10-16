@@ -1,0 +1,88 @@
+id = "vantesh/topgrade-updater"
+name = "Topgrade Updater"
+version = "0.1.0"
+plugin_api = 33
+author = "vantesh"
+license = "MIT"
+icon = "package"
+description = "Count Pacman/AUR packages and run full configured Topgrade in a terminal."
+tags = ["bar", "panel", "service", "system", "utility"]
+dependencies = ["topgrade", "env", "flock", "sh", "mktemp", "stat", "id"]
+
+[[setting]]
+key = "update_cmd"
+type = "string"
+label_key = "settings.update_cmd"
+description_key = "settings.update_cmd_description"
+default = "topgrade -k --no-self-update --notify-end never"
+
+[[setting]]
+key = "terminal_cmd"
+type = "string"
+label_key = "settings.terminal_cmd"
+description_key = "settings.terminal_cmd_description"
+default = ""
+
+[[setting]]
+key = "topgrade_config"
+type = "file"
+label_key = "settings.config"
+description_key = "settings.config_description"
+default = ""
+
+[[setting]]
+key = "auto_check_hours"
+type = "int"
+label_key = "settings.auto"
+description_key = "settings.auto_description"
+default = 6
+min = 0
+max = 168
+
+
+[[setting]]
+key = "notify_on_updates"
+type = "bool"
+label_key = "settings.notify_on_updates"
+description_key = "settings.notify_on_updates_description"
+default = true
+
+[[setting]]
+key = "show_download_size"
+type = "bool"
+label_key = "settings.download_size"
+description_key = "settings.download_size_description"
+default = true
+
+[[service]]
+id = "service"
+entry = "service.luau"
+
+[[widget]]
+id = "topgrade-updater"
+entry = "widget.luau"
+
+[widget.actions]
+right = "plugin vantesh/topgrade-updater:service all refresh"
+
+[[widget.setting]]
+key = "glyph"
+type = "glyph"
+label_key = "settings.glyph"
+description_key = "settings.glyph_description"
+default = "pacman"
+
+[[widget.setting]]
+key = "hide_on_empty"
+type = "bool"
+label_key = "settings.hide"
+description_key = "settings.hide_description"
+default = true
+
+[[panel]]
+id = "panel"
+entry = "panel.luau"
+width = 420
+height = 540
+placement = "attached"
+open_near_click = true
