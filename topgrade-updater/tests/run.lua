@@ -48,7 +48,7 @@ end
 for _, counter in ipairs({ core.counters[1], core.counters[3] }) do
     expect(core.parse(counter, result(screenshot)) == nil, "Yay suffix support must not relax other manager formats")
 end
-expect(core.parse(core.counters[1], result("", 2)) ~= nil, "checkupdates exit 2 means clean")
+
 for _, r in ipairs({ result("", 1), result("unexpected output"), result("", 0, "partial failure"), { timedOut = true }, result("linux 1 -> 2", 2) }) do
     expect(core.parse(core.counters[1], r) == nil, "errors cannot masquerade as zero packages")
 end

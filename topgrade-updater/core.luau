@@ -76,6 +76,7 @@ function M.plan(steps)
             local relevant, shellWrapped = archCommand(command)
             -- Topgrade prints Arch news separately; this does not upgrade packages.
             local newsOnly = command:match("^%s*[%w/_.%-]*yay%s+%-Pw%s*$")
+                or command:match("^%s*[%w/_.%-]*paru%s+%-Pw%s*$")
             if relevant and not newsOnly then
                 local covered = false
                 for _, counter in ipairs(M.counters) do
@@ -120,10 +121,10 @@ end
 function M.parse(counter, result)
     if result.timedOut then return nil, "query timed out" end
     if result.stdoutTruncated or result.stderrTruncated then return nil, "query output was truncated" end
-    -- yay reports an empty upgrade list with exit 1, not exit 0.
-    local yayEmpty = counter.key == "AUR (yay)" and result.exitCode == 1
+    -- Both AUR helpers report an empty upgrade list with a silent exit 1.
+    local aurEmpty = (counter.key == "AUR (yay)" or counter.key == "AUR (paru)") and result.exitCode == 1
         and not (result.stdout or ""):match("%S") and not (result.stderr or ""):match("%S")
-    if yayEmpty then return {} end
+    if aurEmpty then return {} end
     local codes = counter.codes or { [0] = true }
     if not codes[result.exitCode] then return nil, "query failed (exit " .. tostring(result.exitCode) .. "): " .. (result.stderr or "") end
     -- Warnings can indicate partial results; never classify them as clean.
