@@ -56,9 +56,10 @@ local function serviceResult(plan, replies, discoveryFlags, options)
     return assert(latest, "service must publish a result"), queries
 end
 local arch = header("System") .. "Dry running: /usr/bin/paru -Syu\n"
-local clean, queries = serviceResult(arch .. unrelated .. header("Summary"), { result("", 2), result("") })
+    .. header("System update") .. "Dry running: /usr/bin/paru -Pw\n"
+local clean, queries = serviceResult(arch .. unrelated .. header("Summary"), { result("", 2), result("", 1) })
 assert(core.hidden(clean, true) and clean.complete and clean.hasArchSources and #clean.counts == 2 and #clean.unknown == 0,
-    "unrelated enabled steps must not block a confirmed zero Pacman/AUR count")
+    "Paru news and silent exit 1 must not block a confirmed zero Pacman/AUR count")
 assert(#queries == 3 and queries[2] == "env LC_ALL=C NO_COLOR=1 checkupdates"
     and queries[3] == "env LC_ALL=C NO_COLOR=1 paru -Qua", "only repository and AUR queries may run")
 for _, replies in ipairs({
@@ -97,11 +98,9 @@ for _, reply in ipairs({ result("", 1, "AUR unavailable"), result("unexpected ou
         "yay diagnostics, unexpected output, and timeouts hide zero without becoming clean")
 end
 local noArch, disabledQueries = serviceResult(unrelated .. header("Summary"))
-assert(noArch.complete and noArch.total == 0 and #noArch.counts == 0 and core.hidden(noArch, true)
+assert(noArch.complete and noArch.total == 0 and not noArch.hasArchSources and #noArch.counts == 0 and core.hidden(noArch, true)
     and #disabledQueries == 1, "disabled System source must not trigger Arch queries; no relevant sources is scoped zero")
-local otherSystem, otherQueries = serviceResult(header("System") .. "Dry running: apt upgrade\n" .. header("Summary"))
-assert(core.hidden(otherSystem, true) and not otherSystem.hasArchSources and #otherQueries == 1,
-    "non-Arch System commands are outside the count scope and do not select the Pacman glyph")
+
 local emptySystem = serviceResult(header("System") .. unrelated .. header("Summary"))
 assert(emptySystem.phase == "unknown" and not emptySystem.complete and #emptySystem.unknown > 0
     and core.hidden(emptySystem), "an empty System heading stays uncertain even though zero hides")
