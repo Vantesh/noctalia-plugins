@@ -15,7 +15,7 @@ dependencies = ["fontconfig", "nerd-fonts"]
 [[plugin]]
 id = "vantesh/topgrade-updater"
 name = "Topgrade Updater"
-version = "0.1.0"
+version = "0.1.1"
 plugin_api = 33
 author = "vantesh"
 license = "MIT"
