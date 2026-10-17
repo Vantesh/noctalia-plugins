@@ -57,7 +57,7 @@ local function serviceResult(plan, replies, discoveryFlags, options)
 end
 local arch = header("System") .. "Dry running: /usr/bin/paru -Syu\n"
 local clean, queries = serviceResult(arch .. unrelated .. header("Summary"), { result("", 2), result("") })
-assert(core.hidden(clean, true) and clean.complete and #clean.counts == 2 and #clean.unknown == 0,
+assert(core.hidden(clean, true) and clean.complete and clean.hasArchSources and #clean.counts == 2 and #clean.unknown == 0,
     "unrelated enabled steps must not block a confirmed zero Pacman/AUR count")
 assert(#queries == 3 and queries[2] == "env LC_ALL=C NO_COLOR=1 checkupdates"
     and queries[3] == "env LC_ALL=C NO_COLOR=1 paru -Qua", "only repository and AUR queries may run")
@@ -100,7 +100,8 @@ local noArch, disabledQueries = serviceResult(unrelated .. header("Summary"))
 assert(noArch.complete and noArch.total == 0 and #noArch.counts == 0 and core.hidden(noArch, true)
     and #disabledQueries == 1, "disabled System source must not trigger Arch queries; no relevant sources is scoped zero")
 local otherSystem, otherQueries = serviceResult(header("System") .. "Dry running: apt upgrade\n" .. header("Summary"))
-assert(core.hidden(otherSystem, true) and #otherQueries == 1, "non-Arch System commands are outside the count scope")
+assert(core.hidden(otherSystem, true) and not otherSystem.hasArchSources and #otherQueries == 1,
+    "non-Arch System commands are outside the count scope and do not select the Pacman glyph")
 local emptySystem = serviceResult(header("System") .. unrelated .. header("Summary"))
 assert(emptySystem.phase == "unknown" and not emptySystem.complete and #emptySystem.unknown > 0
     and core.hidden(emptySystem), "an empty System heading stays uncertain even though zero hides")

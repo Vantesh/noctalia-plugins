@@ -12,13 +12,13 @@
     "config": "Topgrade configuration",
     "config_description": "Empty uses Topgrade's own configuration lookup. Used by discovery and appended to the update command as a safely quoted --config argument.",
     "auto": "Automatic check interval (hours)",
-    "auto_description": "Checks Pacman/AUR after 10 seconds and periodically thereafter. Zero disables automatic checks.",
+    "auto_description": "Check after startup and every 6 hours by default. Set 0 to disable automatic checks.",
     "notify_on_updates": "Notify when updates are found",
     "notify_on_updates_description": "Notify when a fully successful automatic check finds Pacman/AUR updates, using Noctalia's normal notification sound settings. Manual refreshes and failed, incomplete, empty, or dismissed checks stay silent.",
     "download_size": "Show estimated download size",
     "download_size_description": "Estimate pending Pacman repository package sizes from local sync metadata. Excludes AUR, includes cached packages, and may be stale. Missing metadata hides the estimate without affecting counts.",
     "glyph": "Widget glyph",
-    "glyph_description": "Noctalia native glyph name for the bar widget (default: pacman). For example, package.",
+    "glyph_description": "Leave empty for automatic selection: Pacman when Arch sources are detected, otherwise a gear. Set a glyph name to override.",
     "hide": "Hide when Pacman/AUR are up to date",
     "hide_description": "Enabled by default; hide when the displayed Pacman/AUR total is missing or zero, even during checks, updates, or uncertain results. Positive incomplete counts stay visible with a warning. Disable to keep empty results visible; dismissal still hides the widget."
   }

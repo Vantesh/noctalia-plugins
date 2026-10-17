@@ -163,7 +163,7 @@ end
 local sizeUnits = { B = 1, KiB = 1024, MiB = 1024^2, GiB = 1024^3, TiB = 1024^4 }
 function M.downloadBytes(names, result)
     if result.timedOut or result.stdoutTruncated or result.stderrTruncated or result.exitCode ~= 0
-        or (result.stderr or ""):match("%S") or #(result.stdout or "") > 1024 * 1024 then return nil end
+        or (result.stderr or ""):match("%S") or #(result.stdout or "") > 256 * 1024 then return nil end
     local expected, found, total = {}, {}, 0
     for _, name in ipairs(names) do expected[name] = true end
     local name, bytes, invalid
@@ -173,22 +173,32 @@ function M.downloadBytes(names, result)
         name, bytes, invalid = nil, nil, nil
         return true
     end
-    local active = false
+    local active, lines = false, 0
     for raw in ((result.stdout or "") .. "\n\n"):gmatch("([^\n]*)\n") do
+        lines = lines + 1
+        if lines > 2048 or #raw > 8192 then return nil end
         local line = raw:gsub("\r$", "")
         if not line:match("%S") then
             if active and not record() then return nil end
             active = false
         else
             active = true
-            local field, value = line:match("^([%a][%a ]-)%s*:%s*(.-)%s*$")
+            local field, value = line:match("^(Name)%s*:%s*(.*)$")
+            if not field then field, value = line:match("^(Download Size)%s*:%s*(.*)$") end
+            if value then
+                -- Trim from the end without backtracking across internal whitespace.
+                local trailing = value:reverse():match("^%s*()") - 1
+                value = value:sub(1, #value - trailing)
+            end
             if field == "Name" then
                 if name then invalid = true end
                 name = value
             elseif field == "Download Size" then
                 if bytes ~= nil then invalid = true end
-                local amount, unit = value:match("^(%d+%.?%d*)%s+(%a+)$")
-                if not amount or not sizeUnits[unit] then return nil end
+                if #value > 64 then return nil end
+                local amount, unit = value:match("^(%S+)%s+(%a+)$")
+                if not amount or not (amount:match("^%d+$") or amount:match("^%d+%.%d*$"))
+                    or not sizeUnits[unit] then return nil end
                 bytes = tonumber(amount) * sizeUnits[unit]
                 if bytes ~= bytes or bytes == math.huge then return nil end
             end

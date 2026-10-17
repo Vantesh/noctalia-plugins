@@ -16,6 +16,10 @@ case "$dir" in *'
 printf '%s/noctalia-topgrade.lock' "${dir%/}"
 ]]
 
+M.revokeScript = [[
+if [ -e "$1" ]; then printf 'cancelled\n' > "$1"; fi
+]]
+
 -- Keep FD 9 open in the supervisor, including while Topgrade waits at -k.
 -- Normal descendants inherit it; code that closes inherited FDs cannot be tracked.
 -- Never unlink the lock: contenders must always lock the same inode.
@@ -23,7 +27,13 @@ local script = [[
 receipt=$1
 lock=$2
 shift 2
-[ -f "$receipt" ] || exit 125
+valid_gate() {
+    [ -f "$receipt" ] || return 1
+    marker=
+    { IFS= read -r marker || [ -z "$marker" ]; } < "$receipt" || return 1
+    [ "$marker" != cancelled ]
+}
+valid_gate || exit 125
 umask 077
 exec 9>>"$lock" || { printf 'done 125\n' > "$receipt"; exit 125; }
 flock --nonblock --conflict-exit-code 75 9
@@ -36,7 +46,7 @@ if [ "$code" -ne 0 ]; then
     fi
     exit "$code"
 fi
-[ -f "$receipt" ] || exit 125
+valid_gate || exit 125
 child=
 interrupted=
 finish() {

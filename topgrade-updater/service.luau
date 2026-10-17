@@ -21,8 +21,13 @@ local function runOnce(args, receive, timeout)
     return started
 end
 
-local function probeLock(receive)
-    local started = runOnce({ "flock", "--nonblock", "--conflict-exit-code", "75", lockPath, "sh", "-c", ":" }, receive, 5000)
+local function probeLock(receive, revoke)
+    local args = { "flock", "--nonblock", "--conflict-exit-code", "75", lockPath, "sh", "-c", revoke and completion.revokeScript or ":" }
+    if revoke then
+        table.insert(args, "topgrade-updater")
+        table.insert(args, revoke)
+    end
+    local started = runOnce(args, receive, 5000)
     if not started then receive({ exitCode = 125 }) end
 end
 
@@ -97,7 +102,7 @@ local function check(updateError, automatic)
     -- Only an accepted new check clears dismissal; in-flight results retain it.
     -- Retain visibility, not counts: fresh queries must never accumulate old totals.
     local refreshingVisible = not core.hidden(state)
-    state = { phase = "checking", refreshingVisible = refreshingVisible, dismissed = false, complete = false, total = 0, counts = {}, unknown = {}, step = "Discovering Pacman/AUR in Topgrade plan", updateError = updateError }
+    state = { phase = "checking", refreshingVisible = refreshingVisible, dismissed = false, complete = false, total = 0, counts = {}, unknown = {}, hasArchSources = state.hasArchSources, step = "Discovering Pacman/AUR in Topgrade plan", updateError = updateError }
     publish()
     if not noctalia.commandExists("topgrade") then fail("Topgrade is not installed"); return end
     local dry = { "env", "LC_ALL=C", "NO_COLOR=1" }
@@ -114,6 +119,10 @@ local function check(updateError, automatic)
         end
         local steps, valid = core.discover(result.stdout or "")
         local queue, unknown = core.plan(steps)
+        state.hasArchSources = false
+        for _, counter in ipairs(queue) do
+            if counter.key == "pacman" then state.hasArchSources = true; break end
+        end
         if (result.stderr or ""):match("%S") then
             table.insert(unknown, "Topgrade discovery diagnostics: " .. result.stderr)
         end
@@ -191,7 +200,8 @@ local function pollRecovery()
     probeLock(receive)
 end
 
-local function finishRun(message, blocked, rejected)
+local runUpdate
+local function finishRun(message, blocked, rejected, retry)
     if blocked then
         recovering = { refresh = not rejected }
         nextLockCheck = 0
@@ -206,13 +216,16 @@ local function finishRun(message, blocked, rejected)
         state.updateError = message
         publish()
         pollRecovery()
+    elseif retry then
+        runUpdate()
     else
         check(message)
     end
 end
 
-local function runUpdate()
-    if updateBlocked or state.phase == "checking" or state.phase == "running" then return end
+runUpdate = function()
+    if updateBlocked or state.phase == "running" then return end
+    generation = generation + 1 -- Ignore callbacks from superseded package checks and metadata queries.
     if not noctalia.commandExists("topgrade") then fail("Topgrade is not installed"); return end
     for _, dependency in ipairs({ "sh", "mktemp", "flock", "stat", "id" }) do
         if not noctalia.commandExists(dependency) then
@@ -228,7 +241,6 @@ local function runUpdate()
     local terminal = (noctalia.getConfig("terminal_cmd") or ""):match("^%s*(.-)%s*$")
     local run = { startedAt = noctalia.nowMs() }
     activeRun = run
-    generation = generation + 1 -- Invalidate optional metadata callbacks before updating.
     state.downloadBytes = nil
     state.phase, state.complete, state.error, state.updateError = "running", false, nil, nil
     publish()
@@ -271,11 +283,12 @@ local function runUpdate()
     if not started then finishRun("Could not query XDG_RUNTIME_DIR for the Topgrade lock") end
 end
 
-local function pollRun()
+local function pollRun(retry)
     local run = activeRun
     if not run or not run.path then return end
+    if retry then run.retry = true end
     local kind, value = completion.receipt(noctalia.readFile(run.path))
-    if kind == "conflict" then
+    if kind == "conflict" and not run.retry then
         finishRun("Topgrade is already running; no update was started (lock conflict, exit 75)", true, true)
         return
     end
@@ -283,14 +296,24 @@ local function pollRun()
     if kind == "running" then run.seen = true end
     -- A receipt records the immediate command's exit, not the last FD holder.
     -- Retain this run's ownership until descendants have released the lock too.
-    if not completed and not run.seen and noctalia.nowMs() - run.startedAt < 30000 then return end
-    if run.probing or noctalia.nowMs() < (run.nextProbe or 0) then return end
+    if not run.retry and not completed and not run.seen and noctalia.nowMs() - run.startedAt < 30000 then return end
+    local revoke = run.retry == true or (run.missing or 0) >= 2
+    if run.probing or (not revoke and noctalia.nowMs() < (run.nextProbe or 0)) then return end
     run.probing, run.nextProbe = true, noctalia.nowMs() + 5000
     probeLock(function(result)
         if activeRun ~= run or not run.probing then return end
         run.probing = false
         local status = lockStatus(result)
         if status == "clear" then
+            if revoke then
+                if run.retry then finishRun(nil, nil, nil, true)
+                else finishRun("Topgrade completion tracking was lost; update result is unknown", true) end
+                return
+            end
+            if run.retry then
+                pollRun(true)
+                return
+            end
             -- Read again: a running/missing receipt may have completed in flight.
             local latest, code = completion.receipt(noctalia.readFile(run.path))
             if latest == "done" or latest == "interrupted" then
@@ -300,23 +323,24 @@ local function pollRun()
             end
             if latest == "conflict" then return end
             run.missing = (run.missing or 0) + 1
-            if run.missing >= 2 then
-                finishRun("Topgrade completion tracking was lost; update result is unknown", true)
-            end
+            if run.missing >= 2 then pollRun() end
         else
+            run.retry = nil
             run.missing = 0
             if not status then
                 updateBlocked = "Cannot check Topgrade lock; updates remain disabled while tracking is unresolved"
                 publish()
             end
         end
-    end)
+    end, revoke and run.path or nil)
 end
 
 local function dispatch(action)
     if action == "check" or action == "refresh" then check()
     elseif action == "dismiss" then dismiss()
-    elseif action == "update" then runUpdate() end
+    elseif action == "update" then
+        if activeRun then pollRun(true) else runUpdate() end
+    end
 end
 
 noctalia.state.watch(shared.REQUEST, function(request)

@@ -45,12 +45,15 @@ noctalia msg plugin vantesh/topgrade-updater:service all refresh
 | `auto_check_hours`   | `6`                                               | Check interval, 0–168 hours; `0` disables automatic checks |
 | `notify_on_updates`  | `true`                                            | Notify when automatic checks find updates                  |
 | `show_download_size` | `true`                                            | Estimated Pacman archive sizes, not remaining traffic      |
-| `glyph`              | `pacman`                                          | Per-widget icon                                            |
+| `glyph`              | Empty                                             | Automatic Pacman/gear icon; set a glyph to override        |
 | `hide_on_empty`      | `true`                                            | Per-widget hiding for missing/non-positive counts          |
 
-Automatic checks start about 10 seconds after service startup. Positive but
-incomplete counts show `?`; a hidden widget does not prove the system is up to date.
-Move any old global `glyph`/`hide_on_empty` overrides into widget settings.
+Automatic checks default to every 6 hours, with the first after about 10 seconds;
+set `0` to disable them. The automatic icon is Pacman for detected Arch sources,
+otherwise a gear; this does not add support for other systems. Existing saved
+intervals and glyphs are preserved; clear the glyph to enable automatic selection.
+Positive incomplete counts show `?`; a hidden widget does not prove the system
+is up to date.
 
 ## Safety and limitations
 
@@ -63,9 +66,11 @@ Move any old global `glyph`/`hide_on_empty` overrides into widget settings.
 - Updates use `$XDG_RUNTIME_DIR/noctalia-topgrade.lock`. This only coordinates
   cooperating commands, not independently launched package managers. Never delete
   the lock file to unlock it. Descendants retaining the lock keep updates blocked.
-- Checks and updates are blocked while busy or recovering a lock. Counts refresh
-  after completion and lock release. Exit status does not guarantee every step
-  succeeded; the default `-k` waits for Topgrade's final key prompt.
+- After closing a terminal, the update shortcut can reopen it once the lock is
+  clear. Retries revoke the old launch gate under lock; held or unverifiable
+  locks never queue another upgrade. An IPC update can supersede a package check.
+- Counts refresh after completion and lock release. Exit status does not guarantee
+  every step succeeded; the default `-k` waits for Topgrade's final key prompt.
 - Do not reload/disable the plugin during an update: service restarts lose run
   tracking. Saved commands are not automatically migrated to new defaults.
   Topgrade config can override `--notify-end never`; custom steps may notify too.
