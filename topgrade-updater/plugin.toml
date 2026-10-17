@@ -1,6 +1,6 @@
 id = "vantesh/topgrade-updater"
 name = "Topgrade Updater"
-version = "0.1.0"
+version = "0.1.1"
 plugin_api = 33
 author = "vantesh"
 license = "MIT"
@@ -70,7 +70,7 @@ key = "glyph"
 type = "glyph"
 label_key = "settings.glyph"
 description_key = "settings.glyph_description"
-default = "pacman"
+default = ""
 
 [[widget.setting]]
 key = "hide_on_empty"

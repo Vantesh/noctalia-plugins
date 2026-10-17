@@ -87,7 +87,17 @@ for _, flag in ipairs({ "timedOut", "stdoutTruncated", "stderrTruncated" }) do
 end
 expect(core.downloadBytes({ "linux" }, result(metadata("linux", "1 MiB"), 1)) == nil, "failed metadata is unavailable")
 expect(core.downloadBytes({ "linux" }, result(metadata("linux", "1 MiB"), 0, "warning")) == nil, "partial metadata diagnostics are unavailable")
-expect(core.downloadBytes({ "linux" }, result(string.rep("x", 1024 * 1024 + 1))) == nil, "bound metadata output")
+expect(core.downloadBytes({ "linux" }, result(string.rep("x", 256 * 1024 + 1))) == nil, "bound metadata output")
+local spaced = string.rep(" ", 4000)
+expect(core.downloadBytes({ "linux" }, result(metadata("linux", "1 MiB")
+    .. "\nDescription : left" .. spaced .. "right\nIgnored" .. spaced .. "value")) == 1024^2,
+    "irrelevant metadata with long internal whitespace must not trigger pattern backtracking")
+expect(core.downloadBytes({ "linux" }, result(metadata("linux", string.rep("1", 4000) .. "x MiB"))) == nil,
+    "oversized numeric fields must be rejected before pattern matching")
+for _, extra in ipairs({ "\nDescription : " .. string.rep("x", 8192), string.rep("\nIgnored", 2048) }) do
+    expect(core.downloadBytes({ "linux" }, result(metadata("linux", "1 MiB") .. extra)) == nil,
+        "bound metadata line length and count without returning a partial estimate")
+end
 expect(core.formatDownload(372.5 * 1024^2) == "372.5 MiB" and core.formatDownload(1024^3) == "1.0 GiB", "deterministic binary size formatting")
 for _, name in ipairs({ "--help", "-", "../linux", "linux;touch", "$(id)", "a/b", string.rep("a", 256) }) do
     expect(core.downloadBatches({ { name = name } }) == nil, "untrusted target is not queried: " .. name)
@@ -210,8 +220,7 @@ expect(not latest.dismissed and latest.phase == "checking" and #callbacks == bef
 -- Dismiss during discovery, then let real query callbacks republish and finish.
 onIpc("dismiss")
 onIpc("refresh")
-onIpc("update")
-expect(latest.dismissed and #callbacks == beforeDismiss + 1, "busy refresh/update cannot clear dismissal or overlap discovery")
+expect(latest.dismissed and #callbacks == beforeDismiss + 1, "busy refresh cannot clear dismissal or overlap discovery")
 pending()
 expect(latest.dismissed and latest.phase == "unknown" and #latest.unknown == 1 and core.hidden(latest, false),
     "in-flight uncertain results retain dismissal through all publications")

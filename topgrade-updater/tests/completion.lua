@@ -312,22 +312,69 @@ local missing = os.tmpname()
 os.remove(missing)
 local success = os.execute(completion.command(missing, { "sh", "-c", "exit 0" }))
 assert(not success and not io.open(missing), "expired launch gate prevents a late update")
+local cancelled = os.tmpname()
+assert(os.execute("flock -n -E 75 " .. core.quote(testLock) .. " sh -c "
+    .. core.quote(completion.revokeScript) .. " topgrade-updater " .. core.quote(cancelled)))
+assert(not os.execute(completion.command(cancelled, { "sh", "-c", "exit 0" })),
+    "atomically revoked gate must prevent a delayed terminal from starting")
+os.remove(cancelled)
 
+
+-- An explicit retry reconciles a cancelled terminal without opening the panel.
+for _, receipt in ipairs({ "interrupted 130\n", "" }) do
+    local h = harness({ settings = { terminal_cmd = "fake-terminal" } })
+    h.launch()
+    h.reads[h.path] = receipt
+    h.request("update")
+    h.reply(result(h.path .. "retry"))
+    assert(h.removed[h.path] and h.state().phase == "running" and #h.detached == 2,
+        "retry must revoke the old gate and launch a replacement terminal")
+end
+
+local refreshRetry = harness({ settings = { terminal_cmd = "fake-terminal" } })
+refreshRetry.launch()
+refreshRetry.reads[refreshRetry.path] = "interrupted 130\n"
+refreshRetry.tick()
+refreshRetry.request("update")
+refreshRetry.reply(result(plan))
+refreshRetry.reply(result(refreshRetry.path .. "retry"))
+assert(refreshRetry.state().phase == "running" and #refreshRetry.detached == 2,
+    "retry must supersede the completion refresh and ignore its late callback")
+
+local probingOptions = { delayLock = true, settings = { terminal_cmd = "fake-terminal" } }
+local probingRetry = harness(probingOptions)
+probingRetry.launch(); probingRetry.reads[probingRetry.path] = "interrupted 130\n"; probingRetry.tick()
+probingRetry.request("update")
+probingOptions.lockCallback(result())
+assert(#probingRetry.lockChecks == 2 and probingRetry.lockChecks[2][8] == completion.revokeScript,
+    "retry during a periodic probe must revoke the gate under a fresh lock before replacing")
+probingOptions.lockCallback(result())
+probingRetry.reply(result(probingRetry.path .. "retry"))
+assert(#probingRetry.detached == 2, "an in-flight periodic probe must not lose an explicit retry")
+
+local invalidRetry = harness({ settings = { update_cmd = "" } })
+invalidRetry.request("refresh"); invalidRetry.request("update"); invalidRetry.reply(result(plan))
+assert(invalidRetry.state().phase == "error" and invalidRetry.state().error == "Update command is empty",
+    "superseded refresh callbacks cannot hide failed update validation")
 
 -- A command's exit 75 is not a lock conflict. Every outcome refreshes counts.
 for _, code in ipairs({ 0, 75 }) do
-    local h = harness()
+    local options = { lockResult = result("", 75), settings = { terminal_cmd = "fake-terminal" } }
+    local h = harness(options)
     h.launch()
+    h.reads[h.path] = "running\n"
     h.request("update"); h.request("check")
     assert(#h.queries == 1, "active update excludes overlapping requests")
+    options.lockResult = result()
     h.reads[h.path] = "done " .. code .. "\n"
-    h.tick()
+    h.tick(5000)
     assert(h.state().phase == "checking")
     if code ~= 0 then
         assert(h.state().updateError:find("exit " .. code, 1, true))
         assert(not h.state().updateError:find("already running", 1, true))
     end
     h.refresh()
+    assert(#h.detached == 1, "requests rejected by a held lock must not queue another upgrade")
 end
 local opts = { lockResult = result("", 75) }
 local blocked = harness(opts)
@@ -363,6 +410,11 @@ lost.refresh()
 local launchTimeout = harness()
 launchTimeout.launch(); launchTimeout.tick(30000); launchTimeout.tick(5000)
 assert(launchTimeout.removed[launchTimeout.path], "expired launch gate is removed")
+local revoked = false
+for _, args in ipairs(launchTimeout.lockChecks) do
+    if args[8] == completion.revokeScript and args[10] == launchTimeout.path then revoked = true end
+end
+assert(revoked, "automatic expiry must revoke the old gate under lock before relinquishing ownership")
 launchTimeout.refresh()
 
 local brokenOpts = { lockResult = { exitCode = 2, stderr = "denied" } }

@@ -22,7 +22,8 @@ for line in manifest:lines() do
 end
 manifest:close()
 assert(declared.glyph.scope == "widget.setting" and declared.glyph.type == "glyph"
-    and declared.glyph.default == '"pacman"', "glyph must be a widget setting with its native picker and pacman default")
+    and declared.glyph.default == '""', "empty widget glyph must default to automatic selection")
+
 assert(declared.hide_on_empty.scope == "widget.setting" and declared.hide_on_empty.type == "bool"
     and declared.hide_on_empty.default == "true", "hide_on_empty must be a per-widget setting enabled by default")
 local settings, rendered = {}, {}
@@ -69,6 +70,7 @@ end
 dofile("topgrade-updater/widget.luau")
 require = nativeRequire
 
+
 expect(tooltipValue("Topgrade") == "OK", "startup tooltip must show Topgrade PATH availability")
 topgradeAvailable = false
 update()
@@ -100,8 +102,12 @@ expect(tooltipValue("Pacman + AUR updates") == "4" and tooltipValue("Pacman") ==
 expect(rendered.visible and rendered.text == "4" and rendered.glyph == "package",
     "updates must display their count with the configured glyph")
 
-settings.glyph, settings.hide_on_empty = nil, nil
+settings.glyph, settings.hide_on_empty = "", nil
+state.hasArchSources = true
 update()
+expect(rendered.glyph == "pacman", "clearing the override uses Pacman for detected Arch sources")
+publish({ phase = "clean", total = 0, unknown = {}, hasArchSources = false })
+expect(rendered.glyph == "settings", "plans without Arch sources restore the gear")
 
 publish({ phase = "ready", total = 2, unknown = {}, updateBlocked = "tracking was lost" })
 expect(rendered.visible and rendered.color == "error" and tooltipValue("Status") == "Updates blocked: tracking was lost"
@@ -193,13 +199,14 @@ for _ = 1, 10 do serviceTick() end
 expect(latest().phase == "checking" and not rendered.visible, "automatic startup check cannot flash an empty icon")
 discover()
 reply("linux 1 -> 2\nvim 1 -> 2\n")
-expect(rendered.visible and rendered.text == "2", "startup pending result shows fresh count")
+expect(rendered.visible and rendered.text == "2" and rendered.glyph == "pacman",
+    "startup Arch result shows fresh count and the automatic Pacman glyph")
 onClick()
 expect(panels == 1 and latest().phase == "ready", "left-click opens panel without refreshing")
 -- Native action dispatch invokes onIpc, not the suppressed onRightClick callback.
 serviceIpc(event)
 expect(latest().phase == "checking" and latest().total == 0 and not latest().complete
-    and rendered.visible and rendered.text == ""
+    and rendered.visible and rendered.text == "" and rendered.glyph == "pacman"
     and tooltipValue("Pacman + AUR updates") == "Checking…",
     "native right-click refresh retains visible icon without claiming zero or reusing counts")
 expect(tooltipValue("Pacman") == nil and tooltipValue("Last checked") == latest().checkedAt,

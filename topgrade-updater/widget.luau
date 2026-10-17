@@ -6,7 +6,8 @@ local function render()
     local s = snapshot or { phase = "idle", total = 0, unknown = {} }
     local total = s.total or 0
     local uncertain = #(s.unknown or {}) > 0
-    barWidget.setGlyph(noctalia.getConfig("glyph") or "pacman")
+    local glyph = noctalia.getConfig("glyph") or ""
+    barWidget.setGlyph(glyph ~= "" and glyph or (s.hasArchSources and "pacman" or "settings"))
     local checking = s.phase == "checking"
     barWidget.setGlyphColor(checking and "on_surface_variant"
         or ((s.phase == "error" or s.updateBlocked or s.updateError or uncertain) and "error"
