@@ -1,0 +1,33 @@
+id = "vantesh/aula-f75"
+name = "AULA F75"
+version = "0.1.0"
+plugin_api = 42
+author = "vantesh"
+license = "MIT"
+icon = "keyboard"
+description = "Read-only wired keyboard lighting status from aulaf75ctl."
+tags = ["bar", "panel", "service", "launcher", "utility"]
+dependencies = ["aulaf75ctl"]
+
+[[service]]
+id = "service"
+entry = "service.luau"
+
+[[widget]]
+id = "aula-f75"
+entry = "widget.luau"
+
+[[launcher_provider]]
+id = "launcher"
+entry = "launcher.luau"
+prefix = "aula"
+glyph = "keyboard"
+
+[[panel]]
+id = "panel"
+entry = "panel.luau"
+width = 400
+height = "content"
+max_height = 460
+placement = "attached"
+open_near_click = true
