@@ -7,7 +7,7 @@ Personal plugins for [Noctalia Shell](https://noctalia.dev), targeting plugin AP
 | ---------------- | ------------------------------------------------ | ----------------------- |
 | Hyprbinds        | Read-only Hyprland Lua keybindings cheatsheet    | `feat/hyprbinds`        |
 | Topgrade Updater | Pacman/AUR counts and on-demand Topgrade updates | `feat/topgrade-updater` |
-| AULA F75        | Read-only wired keyboard lighting status         | `feat/aula-f75-status`  |
+| AULA F75         | Guarded wired keyboard lighting controls        | `feat/aula-f75-controls` |
 
 ## Installation
 

@@ -1,13 +1,13 @@
 id = "vantesh/aula-f75"
 name = "AULA F75"
-version = "0.1.0"
-plugin_api = 42
+version = "0.2.0"
+plugin_api = 43
 author = "vantesh"
 license = "MIT"
 icon = "keyboard"
-description = "Read-only wired keyboard lighting status from aulaf75ctl."
+description = "Guarded wired keyboard lighting controls through aulaf75ctl."
 tags = ["bar", "panel", "service", "launcher", "utility"]
-dependencies = ["aulaf75ctl"]
+dependencies = ["aulaf75ctl", "coreutils", "udevadm"]
 
 [[service]]
 id = "service"
@@ -28,6 +28,7 @@ id = "panel"
 entry = "panel.luau"
 width = 400
 height = "content"
-max_height = 460
+max_height = 640
 placement = "attached"
 open_near_click = true
+capture_keys = ["Alt+1", "Alt+2", "Alt+3", "Alt+4", "Alt+5", "Alt+6", "Alt+7", "Alt+8", "Up", "Down", "Home", "End"]

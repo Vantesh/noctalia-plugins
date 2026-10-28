@@ -15,6 +15,7 @@ local function read(report, code)
     return status.read({ stdout = "captured JSON", exitCode = code or 0 }, function() return report end)
 end
 local native = read(fixture())
+expect(native.connection.transport == "wired" and native.connection.label == "Connected · USB", "connection label derives from verified backend transport")
 expect(native.phase == "ready" and native.active == "Respire" and native.nativeObserved, "verified Respire uses active_effect and root observations")
 expect(native.brightness == "9 / 9" and native.speed == "2 / 4" and native.palette == "Green", "firmware levels are not percentages")
 expect(status.label("rainbow_wheel") == "Rainbow Wheel" and status.label("self_defined") == "Self-defined", "human-readable effect names")
@@ -82,7 +83,7 @@ noctalia = {
     end,
 }
 local originalRequire = require
-require = function(path) assert(path == "./status.luau"); return status end
+require = function(path) if path == "./hotplug.luau" then return dofile("aula-f75/hotplug.luau") end; if path == "./operations.luau" then return dofile("aula-f75/operations.luau") end; assert(path == "./status.luau"); return status end
 dofile("aula-f75/service.luau")
 require = originalRequire
 expect(#jobs == 0 and values[status.STATE].phase == "idle", "service startup never reads hardware or polls")

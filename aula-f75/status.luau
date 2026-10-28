@@ -84,8 +84,13 @@ function M.read(result, decode)
         return M.problem(nil, "Active lighting information is missing. Update aulaf75ctl, then refresh.")
     end
     local active = c.active_effect
+    -- Presentation labels do not enable additional transports: validation above
+    -- still requires the verified wired backend. The header consumes this data.
+    local transportLabels = { wired = "USB", wireless = "Wireless", bluetooth = "Bluetooth" }
+    local connectionLabel = "Connected · " .. (transportLabels[d.transport] or d.transport)
     local state = {
-        phase = "ready", message = "Connected · USB",
+        phase = "ready", message = connectionLabel,
+        connection = { transport = d.transport, label = connectionLabel },
         active = active and M.label(active.name) or "Unknown", mode = modes[c.lighting_mode],
         brightness = integer(c.brightness, 9) and tostring(c.brightness) .. " / 9" or "Unavailable",
         speed = integer(c.speed, 4) and tostring(c.speed) .. " / 4" or "Unavailable",
@@ -102,6 +107,21 @@ function M.read(result, decode)
             if effect(observed) and observed.id == active.id then state.nativeObserved = true end
         end
     end
+    local capabilities = type(d.capabilities) == "table" and d.capabilities or {}
+    local effects, seen = {}, {}
+    for _, e in ipairs(type(report.observed_native_effects) == "table" and report.observed_native_effects or {}) do
+        if effect(e) and e.id > 0 and e.id < 19 and e.id ~= 9 and e.id ~= 14 and e.id ~= 18 and not seen[e.id] then
+            effects[#effects + 1] = { id = e.id, name = M.label(e.name) }; seen[e.id] = true
+        end
+    end
+    effects[#effects + 1] = { id = 21, name = "Self-defined" }
+    effects[#effects + 1] = { id = 0, name = "Off" }
+    state.controls = { active = active and active.id, effects = effects,
+        brightness = active and active.id ~= 0 and capabilities.brightness == true and integer(c.brightness, 9) and c.brightness or nil,
+        speed = active and active.id >= 2 and active.id <= 18 and integer(c.speed, 4) and c.speed or nil,
+        palette = active and active.id >= 1 and active.id <= 18 and integer(c.color_index, 7) and c.color_index or nil,
+        power = capabilities.lighting_power == true,
+        dimmingVerified = capabilities.brightness_visual_verified == true }
     return state
 end
 return M
