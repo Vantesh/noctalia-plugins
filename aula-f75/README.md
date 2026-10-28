@@ -1,8 +1,8 @@
 # AULA F75
 
 Compact wired lighting controls for [aulaf75ctl](https://github.com/Vantesh/aulaf75ctl).
-Requires Noctalia v5.4 with Plugin API 43, coreutils, and the current schema-1
-backend with `configuration.active_effect` on Noctalia's PATH. Close F75 Studio
+Requires Noctalia v5.4 with Plugin API 43, coreutils, `udevadm` (systemd/udev),
+and the current schema-1 backend with `configuration.active_effect` on Noctalia's PATH. Close F75 Studio
 and other keyboard controllers before refreshing. Run as your ordinary user.
 
 Register the checkout and enable the plugin:
@@ -21,10 +21,10 @@ reconnecting triggers a fresh verified read even while the panel is closed.
 There is no recurring polling or mutation retry. USB events invalidate pending
 reviews; an already-started apply finishes before another status read can begin.
 The stream is owned and terminated by Noctalia's service runtime, not a separate
-daemon. If udev monitoring is unavailable, launcher/manual refresh still works. There is no polling or automatic retry.
+daemon. If udev monitoring is unavailable, launcher/manual refresh still works.
 The panel distinguishes the active effect from any retained native selection.
 
-Select an effect from the native dropdown, choose a supported palette, or release a brightness
+Select an effect from the dropdown, choose a supported palette, or release a brightness
 or speed slider to prepare a fresh review. The picker uses the backend's observed
 native effects plus Self-defined and Off; Shadow Fade, Scanner and Storm are not
 offered. Parameters appear only when the backend supplies supported values.
@@ -46,8 +46,10 @@ The plugin never invents or persists its own restoration target.
 Reviews stay outside settings/shared state in a fresh private `mktemp` directory
 under an owner-verified mode-0700 `XDG_RUNTIME_DIR`. Noctalia writes the JSON as
 0600. Files are removed after cancellation, apply or failure; directories are
-removed with coreutils. No shell scripts, interpolation or direct HID access are
-used. Review files are invalidated on service exit; abrupt process termination
+removed with coreutils. Hardware commands use explicit argument arrays; JSON is
+written through Noctalia's file API. API 43's string-only stream API runs one
+fixed `exec udevadm monitor` command with no interpolated input. No direct HID
+access or generated shell scripts are used. Review files are invalidated on service exit; abrupt process termination
 may leave private runtime debris, which is never reused and disappears on logout.
 Backend state comparison remains the final check against changes since review.
 
