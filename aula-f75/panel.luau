@@ -108,7 +108,6 @@ render = function()
         end
         table.insert(rows, ui.row({ key = "effect-select", gap = 12, paddingH = 14, paddingV = 12,
             minHeight = 48, align = "center", radius = 12, fill = "surface_container", border = "outline_variant", borderWidth = 1,
-            tooltip = "Lighting effect; Enter to open, Up/Down to navigate",
             onClick = enabled and function()
                 if effectsOpen and effectKeyboard then activateEffect(effectCursor); return end
                 effectsOpen = not effectsOpen
