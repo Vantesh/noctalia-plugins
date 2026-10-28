@@ -349,7 +349,7 @@ noctalia.state.watch(shared.REQUEST, function(request)
     dispatch(request.action)
 end)
 
-function update()
+function onConfigChanged()
     local path = noctalia.getConfig("topgrade_config") or ""
     if path ~= configPath then
         configPath = path
@@ -360,6 +360,9 @@ function update()
             check()
         end
     end
+end
+
+function update()
     if state.phase == "running" then
         pollRun()
         return
