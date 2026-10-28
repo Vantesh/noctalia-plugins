@@ -26,9 +26,9 @@ glyph = "keyboard"
 [[panel]]
 id = "panel"
 entry = "panel.luau"
-width = 480
+width = 400
 height = "content"
 max_height = 640
 placement = "attached"
 open_near_click = true
-capture_keys = ["Alt+1", "Alt+2", "Alt+3", "Alt+4", "Alt+5", "Alt+6", "Alt+7", "Alt+8"]
+capture_keys = ["Alt+1", "Alt+2", "Alt+3", "Alt+4", "Alt+5", "Alt+6", "Alt+7", "Alt+8", "Up", "Down", "Home", "End"]

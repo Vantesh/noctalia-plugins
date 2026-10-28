@@ -28,7 +28,7 @@ local function find(tree, predicate)
     if predicate(tree) then return tree end
     for _, child in ipairs(tree.children) do local found = find(child, predicate); if found then return found end end
 end
-local function text(value) return find(rendered, function(n) return n.props.text == value or (n.props.options and n.props.options[(n.props.selectedIndex or 0) + 1]:sub(-#value) == value) end) end
+local function text(value) return find(rendered, function(n) return n.props.text == value or (type(n.props.text)=="string" and n.props.text:sub(-#value)==value) or (n.props.options and n.props.options[(n.props.selectedIndex or 0) + 1]:sub(-#value) == value) end) end
 dofile("aula-f75/panel.luau")
 local open, close = onOpen, onClose
 assert(rendered == nil and requests == 0)
@@ -58,10 +58,14 @@ open()
 local slider = find(rendered, function(n) return n.kind == "slider" end)
 slider.props.onChange("4"); assert(#actions == 0, "drag changes must not launch review")
 slider.props.onDragEnd(); assert(#actions == 1 and actions[1].kind == "brightness" and actions[1].value == 4)
-local select = find(rendered, function(n) return n.kind == "select" end)
-assert(#select.props.options == 4 and select.props.selectedIndex == 2)
-assert(not find(rendered,function(n)return n.kind=="input"end), "plain native dropdown has no search/button overlay")
-select.props.onChange("1"); assert(actions[2].kind == "effect" and actions[2].value == 2)
+local trigger = find(rendered, function(n) return n.props.key == "effect-select" end)
+trigger.props.onClick()
+local list = find(rendered,function(n)return n.props.key=="effect-options"end)
+assert(list and #list.children==4 and list.props.flexGrow==1)
+assert(find(rendered,function(n)return n.props.key=="effect-viewport"end).props.height==176)
+assert(not find(rendered,function(n)return n.kind=="input"end), "no search")
+find(rendered,function(n)return n.props.key=="effect-2"end).props.onClick()
+assert(actions[2].kind=="effect" and actions[2].value==2)
 operationWatcher({phase="ready",setting="effect",previous="Self-defined",requested="Respire"})
 assert(text("Review lighting change") and text("Apply Change"))
 text("Cancel").props.onClick(); assert(actions[#actions].action == "cancel")
@@ -95,30 +99,31 @@ for _, id in ipairs({1,2,3,21,0}) do
 end
 print("AULA layout: intrinsic root, aligned header, dynamic views, single-row palette and stable refresh passed")
 
--- One native control owns icon/name/chevron and reuses option labels in its popup.
+-- Trigger/list share labels and use restrained, contained native primitives.
 for _, e in ipairs({{1,"Fixed On","☀︎"},{2,"Respire","≋"},{4,"Flash Away","ϟ"},{21,"Self-defined","⚙︎"}}) do
     local r=ready();r.active=e[2];r.controls={active=e[1],effects={{id=e[1],name=e[2]}},power=true}
     open();publish(r)
-    local selector=find(rendered,function(n)return n.kind=="select"end)
-    assert(selector.props.options[1]==e[3].."  "..e[2] and selector.props.selectedIndex==0)
-    assert(selector.props.controlSize=="lg" and selector.props.height>=40)
-    assert(not find(rendered,function(n)return n.props.key=="effect-picker"end),"no icon outside dropdown boundary")
-    assert(not find(rendered,function(n)return n.kind=="input"end),"no search field")
-    local before=#actions;selector.props.onChange(0);assert(#actions==before,"selecting active effect is a no-op")
+    local selector=find(rendered,function(n)return n.props.key=="effect-select"end)
+    assert(selector.props.radius==12 and selector.props.minHeight>=48)
+    selector.props.onClick()
+    local row=find(rendered,function(n)return n.props.key=="effect-"..e[1]end)
+    assert(row.children[1].props.text==e[3].."  "..e[2])
+    assert(row.props.fill=="surface_container_high" and #row.children==1,"selected row has subtle fill, no checkmark")
+    local before=#actions;row.props.onClick();assert(#actions==before,"active effect is a no-op")
     close()
 end
-print("AULA selector: shared icon labels, native dropdown, comfortable size and selection gates passed")
-
-local r=ready();r.controls={active=1,effects={{id=1,name="Fixed On"},{id=2,name="Respire"}},palette=1,power=true}
+local r=ready();r.controls={active=1,effects={{id=1,name="Fixed On"},{id=2,name="Respire"},{id=21,name="Self-defined"}},palette=1,power=true}
 open();publish(r)
-local selector=find(rendered,function(n)return n.kind=="select"end)
-local before=#actions;selector.props.onChange("1")
-assert(#actions==before+1 and actions[#actions].kind=="effect" and actions[#actions].value==2,"native string index must prepare effect review")
-selector.props.onChange("invalid");assert(#actions==before+1)
+local selector=find(rendered,function(n)return n.props.key=="effect-select"end)
+selector.props.onClick();onKey("End",true)
+assert(find(rendered,function(n)return n.props.key=="effect-options"end).props.revealKey=="effect-21")
+local before=#actions;find(rendered,function(n)return n.props.key=="effect-select"end).props.onClick()
+assert(#actions==before+1 and actions[#actions].value==21,"arrow cursor activation requests review")
+publish(r)
 local swatches=find(rendered,function(n)return n.props.key=="palette-swatches"end)
 assert(swatches.props.justify=="space_between" and #swatches.children==8)
 for _,circle in ipairs(swatches.children)do
- assert(circle.props.width==44 and circle.props.height==44 and circle.props.radius==22)
+ assert(circle.props.width==34 and circle.props.height==34 and circle.props.radius==17)
  assert(circle.props.onClick and not find(circle,function(n)return n.kind=="button"end),"focusable circle has no rectangular ghost button")
 end
 swatches.children[3].props.onClick();assert(actions[#actions].kind=="palette" and actions[#actions].value==2)
@@ -128,3 +133,16 @@ assert(swatches.children[3].props.border=="secondary" and swatches.children[3].p
 assert(swatches.children[3].props.fill=="#3b82f6","hover changes outline, not fill")
 close()
 print("AULA callbacks/palette: native string indices/values, review dispatch, circular targets and even spacing passed")
+
+local stateWithTransport=ready()
+stateWithTransport.connection={transport="test_transport",label="Connected · Test transport"}
+stateWithTransport.controls={active=1,effects={{id=1,name="Fixed On"}},palette=1,power=true}
+open();publish(stateWithTransport)
+local header=find(rendered,function(n)return n.props.key=="header"end)
+assert(#header.children==2 and text("Connected · Test transport"),"two header groups keep transport under identity")
+local heading=text("Color palette")
+assert(heading and heading.kind=="label" and not text("Green"),"palette heading has no repeated selected color name")
+assert(find(rendered,function(n)return n.props.key=="effect-select"end).props.minHeight==48)
+publish(status.problem("disconnected"));assert(text("Disconnected") and not text("Connected · Test transport"))
+close()
+print("AULA header/palette: transport presentation, grouping, taller selector and concise heading passed")

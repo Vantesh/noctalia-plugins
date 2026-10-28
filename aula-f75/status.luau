@@ -84,8 +84,13 @@ function M.read(result, decode)
         return M.problem(nil, "Active lighting information is missing. Update aulaf75ctl, then refresh.")
     end
     local active = c.active_effect
+    -- Presentation labels do not enable additional transports: validation above
+    -- still requires the verified wired backend. The header consumes this data.
+    local transportLabels = { wired = "USB", wireless = "Wireless", bluetooth = "Bluetooth" }
+    local connectionLabel = "Connected · " .. (transportLabels[d.transport] or d.transport)
     local state = {
-        phase = "ready", message = "Connected · USB",
+        phase = "ready", message = connectionLabel,
+        connection = { transport = d.transport, label = connectionLabel },
         active = active and M.label(active.name) or "Unknown", mode = modes[c.lighting_mode],
         brightness = integer(c.brightness, 9) and tostring(c.brightness) .. " / 9" or "Unavailable",
         speed = integer(c.speed, 4) and tostring(c.speed) .. " / 4" or "Unavailable",

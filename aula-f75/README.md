@@ -58,19 +58,27 @@ remain with the standalone backend; no AULA protocol is implemented here.
 
 ## Panel layout
 
-The header keeps connection status beside the title. Discrete sliders have one
-left-hand icon, and eight palette circles share one row; Alt+1 through Alt+8
-prepare the corresponding palette review while the panel is open. Swatches are native focusable clickable circles with separate hover outlines and
-selected checks, not nested ghost buttons. Random uses a multicolor SVG.
+The 400 px content-sized panel places verified connection/transport beneath the
+semibold title, beside a centered keyboard icon. Power, Refresh and Close form
+the separate right-hand group. Native outer padding plus a small content inset
+provides comfortable spacing without widening the panel.
 
-Ordinary views use a directly measured column rather than a growing root scroll
-viewport. The plain native effect dropdown owns its scrolling, selection checkmark and keyboard navigation;
-it has no search field or custom clickable overlay. API 43 accepts text options
-only, so one shared symbol mapping supplies monochrome effect icons inside both
-the trigger and list labels. The 44 px trigger has more breathing room. Popup row padding remains
-Noctalia-owned: API 43 exposes no per-row padding or font-size override. The panel is 480 px wide and remains
-content-sized; popup placement and screen-edge handling stay native. During refresh, the last
-verified sections stay visible but disabled to preserve their measured layout;
-an error or disconnect clears them. The first read without cached status still
-uses a compact loading view. Very small outputs can clamp the panel; a complete
-responsive layout for such outputs has not been physically verified.
+The non-searchable effect selector uses rounded native containers. The expanded
+list temporarily replaces the parameter sections and scrolls within a bounded
+five-row viewport, uses subtle theme fills rather
+than checkmarks or bright button backgrounds, and shares symbol labels with the
+trigger. Tab/Enter activates rows; Up/Down or Home/End moves the highlighted
+choice, and Enter on the trigger selects it. Escape and outside dismissal close
+the panel and discard any pending review, as before. No overlay positioning or
+frame/timer workaround is used.
+
+Each supported slider has one left-hand icon. Eight 34 px palette circles share
+the available width, with names retained in tooltips and the selected name omitted
+from the heading. Alt+1 through Alt+8 prepares the corresponding palette review.
+Circles remain native focusable click targets with separate hover outlines and
+selected checks. Random uses a multicolor SVG and a selected outline.
+
+Ordinary views measure their column directly. During refresh, the last verified
+sections stay visible but disabled; an error or disconnect clears them. Only the
+expanded effect list has a fixed, bounded viewport. On very small outputs the
+host can clamp the complete panel; that screen-size case remains unverified.

@@ -15,6 +15,7 @@ local function read(report, code)
     return status.read({ stdout = "captured JSON", exitCode = code or 0 }, function() return report end)
 end
 local native = read(fixture())
+expect(native.connection.transport == "wired" and native.connection.label == "Connected · USB", "connection label derives from verified backend transport")
 expect(native.phase == "ready" and native.active == "Respire" and native.nativeObserved, "verified Respire uses active_effect and root observations")
 expect(native.brightness == "9 / 9" and native.speed == "2 / 4" and native.palette == "Green", "firmware levels are not percentages")
 expect(status.label("rainbow_wheel") == "Rainbow Wheel" and status.label("self_defined") == "Self-defined", "human-readable effect names")
