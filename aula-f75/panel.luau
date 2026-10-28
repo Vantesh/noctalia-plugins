@@ -61,12 +61,11 @@ render = function()
             }),
             ui.row({ key = "header-actions", gap = 5, align = "center" }, {
             ui.button({ glyph = "power", variant = "ghost", controlSize = "sm", width = 26,
-                tooltip = powerKind == "on" and (c and c.onAvailable and "Turn On" or "On unavailable: no verified session restoration") or "Turn Off",
                 enabled = enabled and operations.allowed(s, powerKind), onClick = function() if enabled then choose(powerKind) end end }),
             ui.button({ key = refreshing and "refresh-busy" or "refresh", glyph = "refresh", variant = "ghost", controlSize = "sm", width = 26,
-                enabled = not refreshing and op.phase == "idle", tooltip = "Refresh status",
+                enabled = not refreshing and op.phase == "idle",
                 onClick = function() if not refreshing and op.phase == "idle" then status.request() end end }),
-            ui.button({ glyph = "x", variant = "ghost", controlSize = "sm", width = 26, tooltip = "Close", onClick = function() panel.close() end }),
+            ui.button({ glyph = "x", variant = "ghost", controlSize = "sm", width = 26, onClick = function() panel.close() end }),
             }),
         }),
         ui.separator({}),
@@ -128,7 +127,6 @@ render = function()
                 items[#items + 1] = ui.row({ key = "effect-" .. e.id, minHeight = 40, paddingH = 12, paddingV = 8,
                     radius = 9, align = "center", fill = highlighted and "primary/0.08" or selected and "surface_container_high" or "surface_container",
                     border = highlighted and "outline_variant" or "surface_container", borderWidth = 1,
-                    tooltip = e.name .. (selected and " (current)" or ""),
                     onClick = function() activateEffect(i) end,
                     onHover = function(inside)
                         local nextHover = inside == "true" and i or nil

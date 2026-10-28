@@ -5,7 +5,7 @@ local function render(s)
     barWidget.setGlyph("keyboard")
     barWidget.setGlyphColor(s.phase == "ready" and "primary" or ((s.phase == "error" or s.phase == "missing") and "error" or "on_surface_variant"))
     barWidget.setText(s.phase == "refreshing" and "…" or "")
-    barWidget.setTooltip("AULA F75 · " .. s.message .. (s.active and " · " .. s.active or ""))
+    barWidget.setTooltip("")
 end
 noctalia.state.watch(status.STATE, render)
 function onClick() noctalia.togglePanel("vantesh/aula-f75:panel") end
