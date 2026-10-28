@@ -3,14 +3,14 @@
 [[plugin]]
 id = "vantesh/aula-f75"
 name = "AULA F75"
-version = "0.1.0"
-plugin_api = 42
+version = "0.2.0"
+plugin_api = 43
 author = "vantesh"
 license = "MIT"
 icon = "keyboard"
-description = "Read-only wired keyboard lighting status from aulaf75ctl."
+description = "Guarded wired keyboard lighting controls through aulaf75ctl."
 tags = ["bar", "panel", "service", "launcher", "utility"]
-dependencies = ["aulaf75ctl"]
+dependencies = ["aulaf75ctl", "coreutils", "udevadm"]
 
 [[plugin]]
 id = "vantesh/hyprbinds"
