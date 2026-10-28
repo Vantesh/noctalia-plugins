@@ -23,7 +23,7 @@ local function headline(s)
         return #(s.counts or {}) == 0 and "No enabled Pacman/AUR sources" or "Pacman/AUR up to date", "on_surface"
     end
     if s.phase == "idle" then return "Check for updates", "on_surface_variant" end
-    return "Update counts incomplete", "warning"
+    return "Update counts incomplete", "on_surface"
 end
 
 render = function()
@@ -105,8 +105,6 @@ render = function()
     end
     if #content > 0 then
         table.insert(rows, ui.scroll({ key = "sources", flexGrow = 1, gap = 6 }, content))
-    else
-        table.insert(rows, ui.spacer({ flexGrow = 1 }))
     end
     if #clean > 0 then
         table.insert(rows, ui.label({
@@ -119,11 +117,11 @@ render = function()
             key = "unknown-summary" .. (unknownOpen and "-open" or ""), gap = 6, align = "center",
             onClick = function() unknownOpen = not unknownOpen; render() end,
         }, {
-            ui.glyph({ name = unknownOpen and "chevron-down" or "chevron-right", size = 12, color = "warning" }),
-            ui.glyph({ name = "alert-triangle", size = 13, color = "warning" }),
+            ui.glyph({ name = unknownOpen and "chevron-down" or "chevron-right", size = 12, color = "on_surface" }),
+            ui.glyph({ name = "alert-triangle", size = 13, color = "on_surface" }),
             ui.label({
                 text = "Check warnings: " .. #unknown,
-                fontSize = 11, color = "warning", flexGrow = 1, maxLines = 2,
+                fontSize = 11, color = "on_surface", flexGrow = 1, maxLines = 2,
             }),
         }))
     end

@@ -87,6 +87,11 @@ local function harness(options)
         return callback
     end
     function h.tick(ms) now = now + (ms or 1000); env.update() end
+    function h.configure(key, value)
+        options.settings = options.settings or {}
+        options.settings[key] = value
+        env.onConfigChanged()
+    end
     function h.launch()
         h.request("update")
         h.reply(result(h.path))
@@ -107,6 +112,34 @@ local function harness(options)
         assert(#queries == count, "completion refresh must not loop or rerun upgrades")
     end
     return h
+end
+
+do
+    local h = harness()
+    h.launch()
+    local running = h.state()
+    h.configure("auto_check_hours", 0)
+    h.configure("topgrade_config", "/tmp/new config.toml")
+    assert(h.state() == running and h.state().phase == "running" and #h.queries == 1,
+        "settings callbacks must preserve the active run and receipt without launching another command")
+    h.reads[h.path] = "done 7\n"
+    h.tick()
+    assert(h.removed[h.path] and h.state().updateError:find("exit 7", 1, true)
+        and h.queries[2][6] == "/tmp/new config.toml",
+        "completion tracking survives settings changes and refresh uses the latest configuration")
+    h.refresh()
+end
+
+do
+    local h = harness()
+    h.request("check")
+    h.configure("topgrade_config", "/tmp/new config.toml")
+    assert(#h.queries == 2 and h.queries[2][6] == "/tmp/new config.toml",
+        "a configuration callback replaces an in-flight check immediately")
+    h.reply(result(plan))
+    assert(h.state().phase == "checking" and #h.queries == 2,
+        "the superseded discovery cannot publish results or launch queries")
+    h.refresh()
 end
 
 -- Noctalia v5.3.0's native process runner trims trailing CR/LF before the

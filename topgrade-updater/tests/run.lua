@@ -169,7 +169,7 @@ local before = #callbacks
 for _ = 1, 30 do update() end
 expect(#callbacks == before, "zero disables automatic checks")
 settings.topgrade_config = "/tmp/changed.toml"
-update()
+onConfigChanged()
 expect(latest.phase == "checking" and callbacks[7].args[6] == settings.topgrade_config, "config changes invalidate results")
 callbacks[7].callback({ timedOut = true })
 expect(latest.phase == "error" and not latest.complete and latest.error and core.hidden(latest), "discovery timeout hides zero but retains incomplete error state")

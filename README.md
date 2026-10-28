@@ -1,7 +1,7 @@
 # Noctalia Plugins
 
-Personal plugins for [Noctalia Shell](https://noctalia.dev), targeting plugin API 33
-(Noctalia v5.3.0).
+Personal plugins for [Noctalia Shell](https://noctalia.dev), targeting plugin API 43
+(Noctalia v5.4.0).
 
 | Plugin           | Purpose                                          | Branch                  |
 | ---------------- | ------------------------------------------------ | ----------------------- |

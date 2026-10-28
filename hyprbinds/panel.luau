@@ -41,7 +41,7 @@ local function render()
             ui.label({text = "Quick reference for your shortcuts", fontSize = 12, color = "on_surface_variant"}),
         }),
     })
-    local search = ui.row({gap = 8, paddingH = 10, radius = 9, fill = "surface/0.65", border = "outline/0.45", borderWidth = 1, flexGrow = 1, align = "center"}, {
+    local search = ui.row({gap = 8, paddingH = 10, radius = 9, fill = "surface/0.65", border = "outline_variant/0.45", borderWidth = 1, flexGrow = 1, align = "center"}, {
         ui.glyph({name = "search", size = 17, color = "on_surface_variant"}),
         ui.input({key = "search-" .. inputKey, value = query, placeholder = "Search keybindings…", frameVisible = false,
             flexGrow = 1, focus = true, onChange = "searchChanged"}),

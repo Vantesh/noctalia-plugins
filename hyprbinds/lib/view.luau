@@ -43,7 +43,7 @@ function view.shortcut(shortcut, style, budget, iconStyle, profile, preparedToke
                 fontWeight = "medium", maxWidth = math.max(12, width - 12 - (symbolic and 20 or 0)), flexGrow = 1, textAlign = "center"})
         end
         line[#line + 1] = ui.row({width = width, minHeight = 30, gap = 4, paddingH = 6, paddingV = 5, align = "center", justify = "center",
-            fill = "surface_variant/0.7", radius = 5, border = "outline/0.4", borderWidth = 1, tooltip = token.text}, children)
+            fill = "surface_container/0.7", radius = 5, border = "outline_variant/0.4", borderWidth = 1, tooltip = token.text}, children)
         used = used + gap + separatorWidth + width
     end
     flush()
@@ -71,7 +71,7 @@ function view.binding(binding, index, style, width, iconStyle, profile, alignedW
             ui.label({text = wrappedDescription or icons.wrapText(binding.description), fontSize = 13, flexGrow = 1,
                 maxWidth = math.max(50, width - shortcutWidth - 40)}),
         }),
-        ui.separator({color = "outline/0.14", thickness = 1}),
+        ui.separator({color = "outline_variant/0.14", thickness = 1}),
     })
 end
 
@@ -115,17 +115,17 @@ function view.cards(groups, columns, width)
         local children = {}
         if group.header then
             children[#children + 1] = ui.row({gap = 10, paddingH = 12, paddingV = 12,
-                align = "center", fill = "surface_variant/0.4", radius = 9}, {
+                align = "center", fill = "surface_container/0.4", radius = 9}, {
                 ui.glyph({name = headerIcon(group.header), size = 21, color = "primary"}),
                 ui.label({text = icons.wrapText(group.header), fontSize = 15, fontWeight = "bold", flexGrow = 1}),
-                ui.row({paddingH = 7, paddingV = 3, fill = "surface_variant/0.8", radius = 5}, {
+                ui.row({paddingH = 7, paddingV = 3, fill = "surface_container/0.8", radius = 5}, {
                     ui.label({text = tostring(#group.rows), fontSize = 11, fontWeight = "medium"}),
                 }),
             })
         end
         children[#children + 1] = ui.column({gap = 0, paddingV = 4}, view.pack(group.rows))
         stacks[column][#stacks[column] + 1] = ui.column({key = "group-" .. index, gap = 0,
-            fill = "surface/0.65", radius = 11, border = "outline/0.35", borderWidth = 1}, children)
+            fill = "surface/0.65", radius = 11, border = "outline_variant/0.35", borderWidth = 1}, children)
         used = used + weights[index]
     end
     local result = {}

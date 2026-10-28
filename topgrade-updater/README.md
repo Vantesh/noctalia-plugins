@@ -5,12 +5,18 @@ terminal. Never upgrades automatically.
 
 ## Requirements
 
-- Noctalia plugin API 33; `topgrade`, `env`, `flock` (util-linux), `sh`, `mktemp`,
+- Noctalia plugin API 43 (v5.4.0); `topgrade`, `env`, `flock` (util-linux), `sh`, `mktemp`,
   `stat`, and `id` on Noctalia's `PATH`.
 - A supported terminal and a private, user-owned, writable mode-0700
   `XDG_RUNTIME_DIR` that is not a symlink.
 - `checkupdates` (`pacman-contrib`) for Pacman counts; `yay` or `paru` for AUR.
   Missing query tools produce unknown results, not zero counts.
+
+API 43 supports the current palette role names and retains content-sized panels:
+short states use less space, while expanded package lists scroll within the existing 540 px height limit.
+Settings changes use the native service callback to retain timers and active
+update tracking. Unsupported `warning` color tokens now explicitly use
+`on_surface`, preserving the native fallback color without runtime warnings.
 
 ## Usage
 
@@ -72,7 +78,9 @@ is up to date.
 - Counts refresh after completion and lock release. Exit status does not guarantee
   every step succeeded; the default `-k` waits for Topgrade's final key prompt.
 - Do not reload/disable the plugin during an update: service restarts lose run
-  tracking. Saved commands are not automatically migrated to new defaults.
+  tracking. Editing settings preserves tracking; a changed Topgrade config is
+  used for the next check or update. Saved commands are not automatically migrated
+  to new defaults.
   Topgrade config can override `--notify-end never`; custom steps may notify too.
 
 [MIT license](LICENSE)
