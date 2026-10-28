@@ -7,7 +7,7 @@ license = "MIT"
 icon = "keyboard"
 description = "Guarded wired keyboard lighting controls through aulaf75ctl."
 tags = ["bar", "panel", "service", "launcher", "utility"]
-dependencies = ["aulaf75ctl", "coreutils"]
+dependencies = ["aulaf75ctl", "coreutils", "udevadm"]
 
 [[service]]
 id = "service"

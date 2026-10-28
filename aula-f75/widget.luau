@@ -3,7 +3,7 @@ local status = require("./status.luau")
 local visible = true
 local function render(s)
     s = s or { phase = "idle", message = "Open to refresh" }
-    if s.phase == "disconnected" then visible = false
+    if s.phase == "disconnected" or s.disconnected == true then visible = false
     elseif s.phase == "ready" then visible = true end
     barWidget.setVisible(visible)
     barWidget.setGlyph("keyboard")

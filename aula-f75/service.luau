@@ -1,6 +1,9 @@
 --!nonstrict
 local status = require("./status.luau")
 local operations = require("./operations.luau")
+local hotplug = require("./hotplug.luau")
+local usbDirty, usbDisconnected, alive = false, false, true
+local drainUSB
 local busy, generation = false, 0
 local function publish(value) noctalia.state.set(status.STATE, value) end
 
@@ -30,11 +33,13 @@ refresh = function()
         current = nil; publish(status.problem("missing_cli")); operation({ phase = "idle", error = "aulaf75ctl not installed" }); return
     end
     busy = true
-    publish({ phase = "refreshing", message = "Refreshing…" })
+    publish({ phase = "refreshing", message = "Refreshing…", disconnected = usbDisconnected })
     local started = noctalia.runAsync({ "aulaf75ctl", "status", "--transport", "wired", "--json" }, function(result)
         if received or token ~= generation then return end
         received, busy = true, false
+        if usbDirty then drainUSB(); return end
         current = status.read(result, noctalia.json.decode)
+        usbDisconnected = current.phase == "disconnected"
         publish(current)
         if phase == "refreshing" then
             local previous = noctalia.state.get(operations.KEY) or {}
@@ -74,9 +79,11 @@ run = function(args, timeout, receive)
         if cancelled then
             cancelled = false
             if args[1] == "mktemp" and type(r.stdout) == "string" then noctalia.runAsync({ "rmdir", "--", r.stdout }) end
-            cleanup(); operation({ phase = "idle" }); return
+            busy = false
+            cleanup(); operation({ phase = "idle" }); drainUSB(); return
         end
         receive(r)
+        drainUSB()
     end
     if not noctalia.runAsync(args, finish, timeout) then finish({ exitCode = 125 }) end
 end
@@ -161,9 +168,39 @@ noctalia.state.watch(operations.REQUEST, function(action)
             operation({ phase = "refreshing", message = "Refreshing hardware status…",
                 error = (not validResult(result) or not report or report.ok ~= true)
                     and operations.error(report, "Apply outcome uncertain. Hardware may have changed; fresh status and review required.") or nil })
+            usbDirty = false -- This post-apply status read covers all queued USB events.
             refresh()
         end)
     elseif action.action == "prepare" then prepare(action) end
 end)
-function onExit() generation = generation + 1; cleanup() end
+function onExit() alive = false; generation = generation + 1; cleanup() end
 operation({ phase = "idle" })
+
+-- Coalesce USB events while a subprocess owns the hardware. Never overlap it,
+-- reuse a review after re-enumeration, interrupt an apply, or retry a mutation.
+drainUSB = function()
+    if not alive or not usbDirty or busy or running or phase == "applying" then return end
+    usbDirty = false
+    cleanup()
+    operation({ phase = "idle" })
+    refresh()
+end
+local function usbEvent(action)
+    if not alive then return end
+    usbDirty = true
+    current = nil
+    if action == "remove" then usbDisconnected = true; publish(status.problem("disconnected")) end
+    if phase == "applying" then return end
+    if running then
+        cancelled = true
+        operation({ phase = "reviewing", message = "USB connection changed; discarding review…" })
+        return
+    end
+    drainUSB()
+end
+if noctalia.runStream and noctalia.commandExists("udevadm") then
+    -- API 43's stream API accepts a shell string only. This is a fixed command
+    -- with no interpolated input; exec gives the host direct process ownership.
+    noctalia.runStream("exec udevadm monitor --udev --subsystem-match=hidraw --property", hotplug.parser(usbEvent))
+    refresh() -- One startup read; subsequent checks are event-driven, not polled.
+end

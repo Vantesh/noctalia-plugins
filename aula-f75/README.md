@@ -15,7 +15,13 @@ noctalia msg plugins enable vantesh/aula-f75
 Add the AULA F75 bar widget or use `/aula` in the launcher. Opening the panel or
 pressing Refresh requests wired status. The icon-only bar widget hides after a
 status check confirms disconnection and reappears after a verified connected read.
-Use the launcher to reopen and refresh while the widget is hidden. There is no polling or automatic retry.
+The service watches udev events for the wired F75 control interface through
+`udevadm monitor` and performs one initial status read. Unplugging hides the icon;
+reconnecting triggers a fresh verified read even while the panel is closed.
+There is no recurring polling or mutation retry. USB events invalidate pending
+reviews; an already-started apply finishes before another status read can begin.
+The stream is owned and terminated by Noctalia's service runtime, not a separate
+daemon. If udev monitoring is unavailable, launcher/manual refresh still works. There is no polling or automatic retry.
 The panel distinguishes the active effect from any retained native selection.
 
 Select an effect from the native dropdown, choose a supported palette, or release a brightness
