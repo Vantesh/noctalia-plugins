@@ -153,3 +153,10 @@ assert(find(rendered,function(n)return n.props.key=="effect-select"end).props.mi
 publish(status.problem("disconnected"));assert(text("Disconnected") and not text("Connected · Test transport"))
 close()
 print("AULA header/palette: transport presentation, grouping, taller selector and concise heading passed")
+
+local checkingRestore=ready();checkingRestore.busy=true
+checkingRestore.controls={active=0,effects={{id=1,name="Fixed On"}},power=true}
+open();publish(checkingRestore)
+assert(not find(rendered,function(n)return n.props.key=="refresh-busy"end).props.enabled,"restoration probe must visibly gate refresh")
+assert(not find(rendered,function(n)return n.props.key=="effect-select"end).props.onClick,"restoration probe must visibly gate effect selection")
+close()

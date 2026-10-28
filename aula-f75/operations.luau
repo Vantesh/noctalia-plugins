@@ -1,9 +1,9 @@
 --!nonstrict
--- Only the service calls this module. Raw reviews never enter shared state.
+-- Shared command/presentation helpers; raw reviews stay private to the service.
 local M = { KEY = "aula_f75.operation", REQUEST = "aula_f75.action" }
 local limits = { brightness = 9, speed = 4, palette = 7 }
 function M.allowed(s, kind, value)
-    if not s or s.phase ~= "ready" or not s.controls then return false end
+    if not s or s.phase ~= "ready" or s.busy or not s.controls then return false end
     local c = s.controls
     if type(c.active) ~= "number" then return false end
     if limits[kind] then
@@ -35,6 +35,16 @@ function M.plan(r, kind, value)
         or type(p.review_state.configuration_hex) ~= "string" or #p.review_state.configuration_hex ~= 256
         or type(p.review_state.matrix_hex) ~= "string" or #p.review_state.matrix_hex ~= 768
         or not p.review_state.configuration_hex:match("^%x+$") or not p.review_state.matrix_hex:match("^%x+$") then return nil end
+    -- Reject malformed display objects before private storage is allocated.
+    -- Otherwise indexing a number/null target can strand review preparation.
+    for _, key in ipairs({ "previous_effect", "active_effect", "previous_palette", "requested_palette" }) do
+        if p[key] ~= nil and (type(p[key]) ~= "table" or type(p[key].name) ~= "string") then return nil end
+    end
+    if kind == "on" then
+        local target = type(p.power) == "table" and p.power.restoration_target
+        if type(target) ~= "table" or type(target.name) ~= "string" or type(target.id) ~= "number"
+            or target.id <= 0 or target.id > 255 or target.id % 1 ~= 0 then return nil end
+    end
     if kind == "effect" and (type(p.requested_effect) ~= "table" or p.requested_effect.id ~= value) then return nil end
     if kind == "brightness" and p.requested_brightness ~= value then return nil end
     if kind == "speed" and p.requested_speed ~= value then return nil end

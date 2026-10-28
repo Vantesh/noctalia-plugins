@@ -13,13 +13,27 @@ local function review(kind, value)
         previous_brightness=5,requested_brightness=value,previous_palette={index=1,name="green"},requested_palette={index=value,name="blue"} }
     return {schema_version=1,command="lighting_"..kind,ok=true,review_ready=true,[kind.."_plan"]=p}
 end
+-- Malformed nested metadata must fail before a file or apply can exist.
+local malformed = review("brightness", 3)
+malformed.brightness_plan.previous_effect = 7
+assert(not ops.plan(malformed, "brightness", 3))
+malformed = review("palette", 2)
+malformed.palette_plan.previous_palette = "green"
+assert(not ops.plan(malformed, "palette", 2))
+malformed = review("on")
+malformed.power_plan, malformed.on_plan = malformed.on_plan, nil
+malformed.power_plan.power = { action = "on" }
+assert(not ops.plan(malformed, "on"), "On requires a usable backend restoration target")
+malformed.power_plan.power.restoration_target = { id = 21, name = "self_defined" }
+assert(ops.plan(malformed, "on"))
 local callbacks, values, watchers, files, decoded, calls = {}, {}, {}, {}, {}, {}
 local removed = 0
+local rejectStatus = false
 noctalia = {
  state={get=function(k)return values[k]end,set=function(k,v)values[k]=v;if watchers[k]then watchers[k](v)end end,watch=function(k,f)watchers[k]=f end},
  commandExists=function()return true end,
  json={decode=function(raw)return decoded[raw]end},
- runAsync=function(args,cb,timeout) calls[#calls+1]=args; if cb then callbacks[#callbacks+1]=cb end;return true end,
+ runAsync=function(args,cb,timeout) calls[#calls+1]=args; if rejectStatus and args[2]=="status" then return false end; if cb then callbacks[#callbacks+1]=cb end;return true end,
  writeFile=function(p,data)assert(not files[p]);files[p]=data;return true end,
  removeFile=function(p)files[p]=nil;removed=removed+1;return true end,
 }
@@ -61,6 +75,13 @@ local cb=table.remove(callbacks,1);cb({timedOut=true});assert(phase()=="refreshi
 assert(values[status.STATE].phase=="refreshing","uncertain apply always refreshes")
 decoded.status=report();reply("status");assert(values[status.STATE].controls.brightness==5,"never optimistic")
 cb({exitCode=0,stdout="late"});assert(values[status.STATE].controls.brightness==5)
+-- A successful mutation followed by a failed status spawn must remain recoverable.
+prepare();action({action="apply"})
+decoded.applied={schema_version=1,command="lighting_brightness",ok=true}
+rejectStatus=true;reply("applied")
+assert(phase()=="idle" and values[ops.KEY].error and values[status.STATE].phase=="error", "failed post-apply refresh must release the operation gate")
+local commands=#calls;action({action="prepare",kind="brightness",value=2});assert(#calls==commands,"failed status clears cached authorization state")
+rejectStatus=false;refresh();action({action="cancel"})
 -- Cancellation waits for a read-only command before releasing the operation gate.
 action({action="prepare",kind="palette",value=2});action({action="cancel"});before=#calls
 action({action="prepare",kind="brightness",value=2});assert(#calls==before)
@@ -76,7 +97,7 @@ conf.lighting_mode="per_key";conf.active_effect.name="self_defined";conf.stored_
 refresh(r);assert(values[status.STATE].active=="Self-defined" and values[status.STATE].controls.speed==nil and values[status.STATE].controls.palette==nil)
 -- Off never invents a restoration target, and a failed read-only probe keeps On disabled.
 r=report(0);r.devices[1].configuration.active_effect.name="off";r.devices[1].configuration.lighting_mode="off"
-refresh(r);reply("no_restore",1);assert(not values[status.STATE].controls.onAvailable)
+refresh(r);assert(values[status.STATE].busy and not ops.allowed(values[status.STATE],"effect",1));reply("no_restore",1);assert(not values[status.STATE].controls.onAvailable and not values[status.STATE].busy)
 before=#calls;action({action="prepare",kind="on"});assert(#calls==before)
 refresh()
 action({action="prepare",kind="brightness",value=3});decoded.noop=review("brightness",3);decoded.noop.brightness_plan.no_op=true

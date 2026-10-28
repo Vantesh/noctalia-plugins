@@ -47,10 +47,13 @@ refresh = function()
         end
         if current.controls and current.controls.active == 0 and current.controls.power then
             busy = true
+            current.busy = true
+            publish(current)
             local args = operations.args("on")
             for _, v in ipairs({ "--dry-run", "--details", "--json" }) do args[#args + 1] = v end
             run(args, 10000, function(r)
                 busy = false
+                current.busy = nil
                 local plan = operations.plan(operations.decode(r, "on"), "on")
                 current.controls.onAvailable = r.exitCode == 0 and plan ~= nil and type(plan.power.restoration_target) == "table"
                 publish(current)
@@ -59,7 +62,12 @@ refresh = function()
     end, 5000)
     if not started and not received then
         received, busy = true, false
+        current = nil
         publish(status.problem(nil, "Could not start aulaf75ctl. Check Noctalia's PATH."))
+        if phase == "refreshing" then
+            local previous = noctalia.state.get(operations.KEY) or {}
+            operation({ phase = "idle", error = previous.error or "Unable to refresh hardware status. Refresh before preparing another change." })
+        end
     end
 end
 

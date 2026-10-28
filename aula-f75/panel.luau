@@ -10,8 +10,7 @@ local render
 local palette = { "Red", "Green", "Blue", "Yellow", "Magenta", "Cyan", "White", "Random" }
 -- These are the palette colors themselves, not interface/theme colors.
 local colors = { "#ef4444", "#22c55e", "#3b82f6", "#eab308", "#d946ef", "#06b6d4", "#ffffff", "surface_container" }
--- API 43 ui.select exposes text options, not glyph/row props. Text-presentation
--- symbols keep both trigger and popup on the same native keyboard/scroll path.
+-- One theme-colored symbol mapping is shared by the trigger and list rows.
 local effectIcons = {
     [0] = "◐", [1] = "☀︎", [2] = "≋", [3] = "⌒", [4] = "ϟ", [5] = "☂︎",
     [6] = "◌", [7] = "◎", [8] = "✧", [10] = "↝", [11] = "↠", [12] = "✺",
@@ -36,13 +35,13 @@ local function cancel() operations.send({ action = "cancel" }) end
 render = function()
     if not opened then return end
     local s = snapshot or { phase = "idle", message = "Open to refresh" }
-    local refreshing = s.phase == "refreshing"
+    local refreshing = s.phase == "refreshing" or s.busy == true
     -- Keep the last measured sections during a read, clearly disabled; never use
     -- this presentation cache to authorize actions or survive an error/disconnect.
     local view = refreshing and presented or s
     view = view or s
     local c = view.controls
-    local enabled = s.phase == "ready" and op.phase == "idle" and c ~= nil and c.active ~= nil
+    local enabled = s.phase == "ready" and not refreshing and op.phase == "idle" and c ~= nil and c.active ~= nil
     local powerKind = c and c.active == 0 and "on" or "off"
     local rows = {
         ui.row({ key = "header", gap = 5, align = "center" }, {
@@ -199,7 +198,7 @@ render = function()
         if s.detail then table.insert(rows, ui.label({ text = s.detail, fontSize = 12, maxLines = 3 })) end
     end
     table.insert(rows, ui.separator({}))
-    local verified = s.phase == "ready" and op.phase == "idle"
+    local verified = s.phase == "ready" and not refreshing and op.phase == "idle"
     table.insert(rows, ui.row({ key = "footer", gap = 6, align = "center" }, {
         ui.glyph({ name = verified and "shield-check" or "shield", size = 13, color = "primary" }),
         ui.label({ text = verified and "Verified device state" or "Status pending", fontSize = 10, flexGrow = 1 }),
