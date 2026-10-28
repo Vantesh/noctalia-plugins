@@ -16,7 +16,7 @@ Add the AULA F75 bar widget or use `/aula` in the launcher. Opening the panel or
 pressing Refresh requests wired status. There is no polling or automatic retry.
 The panel distinguishes the active effect from any retained native selection.
 
-Search the effect picker, choose a supported palette, or release a brightness
+Select an effect from the native dropdown, choose a supported palette, or release a brightness
 or speed slider to prepare a fresh review. The picker uses the backend's observed
 native effects plus Self-defined and Off; Shadow Fade, Scanner and Storm are not
 offered. Parameters appear only when the backend supplies supported values.
@@ -55,3 +55,18 @@ noctalia plugins lint aula-f75
 
 MIT — see [LICENSE](../LICENSE). Hardware interpretation and protocol attribution
 remain with the standalone backend; no AULA protocol is implemented here.
+
+## Panel layout
+
+The header keeps connection status beside the title. Discrete sliders have one
+left-hand icon, and eight palette circles share one row; Alt+1 through Alt+8
+prepare the corresponding palette review while the panel is open. Random uses
+a multicolor SVG because native buttons cannot take an image background.
+
+Ordinary views use a directly measured column rather than a growing root scroll
+viewport. The plain native effect dropdown owns its scrolling and keyboard navigation;
+it has no search field or custom clickable overlay. During refresh, the last
+verified sections stay visible but disabled to preserve their measured layout;
+an error or disconnect clears them. The first read without cached status still
+uses a compact loading view. Very small outputs can clamp the panel; a complete
+responsive layout for such outputs has not been physically verified.

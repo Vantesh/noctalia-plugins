@@ -28,7 +28,7 @@ local function find(tree, predicate)
     if predicate(tree) then return tree end
     for _, child in ipairs(tree.children) do local found = find(child, predicate); if found then return found end end
 end
-local function text(value) return find(rendered, function(n) return n.props.text == value end) end
+local function text(value) return find(rendered, function(n) return n.props.text == value or (n.props.options and n.props.options[(n.props.selectedIndex or 0) + 1] == value) end) end
 dofile("aula-f75/panel.luau")
 local open, close = onOpen, onClose
 assert(rendered == nil and requests == 0)
@@ -37,7 +37,7 @@ assert(requests == 1 and text("Self-defined") and text("Storm (18)") and text("U
 local refresh = find(rendered, function(n) return n.props.tooltip == "Refresh status" end)
 refresh.props.onClick(); assert(requests == 2)
 publish({ phase = "refreshing", message = "Refreshing…" })
-assert(text("Refreshing…") and not text("Self-defined"))
+assert(text("Refreshing…") and text("Self-defined"), "retain measured sections while refreshing, with controls disabled")
 refresh = find(rendered, function(n) return n.props.tooltip == "Refresh status" end)
 assert(not refresh.props.enabled); refresh.props.onClick(); assert(requests == 2)
 local previous = rendered; close(); publish(ready()); assert(rendered == previous, "closed panel must not render")
@@ -58,10 +58,9 @@ open()
 local slider = find(rendered, function(n) return n.kind == "slider" end)
 slider.props.onChange(4); assert(#actions == 0, "drag changes must not launch review")
 slider.props.onDragEnd(); assert(#actions == 1 and actions[1].kind == "brightness" and actions[1].value == 4)
-text("Effect: Self-defined").props.onClick()
-find(rendered, function(n) return n.kind == "input" end).props.onChange("resp")
 local select = find(rendered, function(n) return n.kind == "select" end)
-assert(#select.props.options == 2 and select.props.options[2] == "Respire")
+assert(#select.props.options == 4 and select.props.selectedIndex == 2)
+assert(not find(rendered,function(n)return n.kind=="input"end), "plain native dropdown has no search/button overlay")
 select.props.onChange(1); assert(actions[2].kind == "effect" and actions[2].value == 2)
 operationWatcher({phase="ready",setting="effect",previous="Self-defined",requested="Respire"})
 assert(text("Review lighting change") and text("Apply Change"))
@@ -73,3 +72,25 @@ state.controls = nil
 require = originalRequire
 assert(requests == 4, "widget, launcher and close do not request hardware reads")
 print("AULA F75 UI: panel lifecycle, refresh, errors, widget and launcher passed")
+
+-- Layout regression: ordinary dynamic views measure a column, never a root viewport.
+for _, id in ipairs({1,2,3,21,0}) do
+    local r = ready()
+    r.controls = { active=id, effects={{id=1,name="Fixed On"}}, power=true,
+        brightness=id~=0 and 5 or nil, speed=(id==2 or id==3) and 3 or nil,
+        palette=(id==1 or id==2) and 2 or nil }
+    open(); publish(r)
+    assert(rendered.kind=="column" and not find(rendered,function(n)return n.kind=="scroll"end))
+    local header=find(rendered,function(n)return n.props.key=="header"end)
+    assert(find(header,function(n)return n.props.text=="Connected · USB"end), "connection is in header")
+    local swatches=find(rendered,function(n)return n.props.key=="palette-swatches"end)
+    assert((swatches~=nil)==(r.controls.palette~=nil))
+    if swatches then assert(#swatches.children==8, "eight equal swatches in one row") end
+    local count=#rendered.children
+    publish({phase="refreshing",message="Refreshing…"})
+    assert(#rendered.children==count, "refresh keeps measured sections while disabling controls")
+    publish(status.problem("disconnected"))
+    assert(not find(rendered,function(n)return n.kind=="slider"end), "disconnect drops retained controls")
+    close()
+end
+print("AULA layout: intrinsic root, aligned header, dynamic views, single-row palette and stable refresh passed")
