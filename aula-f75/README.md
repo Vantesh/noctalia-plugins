@@ -13,7 +13,9 @@ noctalia msg plugins enable vantesh/aula-f75
 ```
 
 Add the AULA F75 bar widget or use `/aula` in the launcher. Opening the panel or
-pressing Refresh requests wired status. There is no polling or automatic retry.
+pressing Refresh requests wired status. The icon-only bar widget hides after a
+status check confirms disconnection and reappears after a verified connected read.
+Use the launcher to reopen and refresh while the widget is hidden. There is no polling or automatic retry.
 The panel distinguishes the active effect from any retained native selection.
 
 Select an effect from the native dropdown, choose a supported palette, or release a brightness

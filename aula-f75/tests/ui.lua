@@ -21,6 +21,7 @@ ui = setmetatable({}, { __index = function(_, kind) return function(props, child
 panel = { render = function(tree) rendered = tree end, close = function() closes = closes + 1 end }
 barWidget = {
     setGlyph = function(v) widget.glyph = v end, setGlyphColor = function(v) widget.color = v end,
+    setVisible = function(v) widget.visible = v end,
     setText = function(v) widget.text = v end, setTooltip = function(v) widget.tooltip = v end,
 }
 local function publish(value) state = value; for _, cb in ipairs(watchers) do cb(value) end end
@@ -49,6 +50,12 @@ dofile("aula-f75/widget.luau")
 assert(widget.glyph == "keyboard" and widget.tooltip == "")
 onClick(); assert(toggles == 1)
 publish(ready()); assert(widget.color == "primary" and widget.tooltip == "")
+publish({phase="refreshing",message="Refreshing…"})
+assert(widget.text=="" and widget.visible, "busy refresh never adds dots")
+publish(status.problem("disconnected"));assert(not widget.visible, "confirmed disconnection hides the capsule")
+publish({phase="refreshing",message="Refreshing…"});assert(not widget.visible,"refresh does not flash a disconnected widget")
+publish(ready());assert(widget.visible and widget.text=="", "verified reconnection restores icon-only widget")
+
 launcher = { setResults = function(query, results) assert(query == "aula"); assert(results[1].id == "open") end }
 dofile("aula-f75/launcher.luau")
 onQuery("aula"); onActivate("open"); assert(toggles == 2)
