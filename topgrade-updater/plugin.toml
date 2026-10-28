@@ -1,6 +1,6 @@
 id = "vantesh/topgrade-updater"
 name = "Topgrade Updater"
-version = "0.1.1"
+version = "0.1.2"
 plugin_api = 43
 author = "vantesh"
 license = "MIT"

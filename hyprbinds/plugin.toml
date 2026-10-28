@@ -1,6 +1,6 @@
 id = "vantesh/hyprbinds"
 name = "Hyprland Keybindings"
-version = "0.1.4"
+version = "0.1.5"
 plugin_api = 43
 author = "vantesh"
 license = "MIT"
