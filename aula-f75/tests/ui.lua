@@ -2,20 +2,21 @@
 local status = dofile("aula-f75/status.luau")
 local state, watchers, rendered, requests, closes, toggles = nil, {}, nil, 0, 0, 0
 local widget = {}
+local actions, operationWatcher = {}, nil
 local function ready()
     return { phase = "ready", message = "Connected · USB", active = "Self-defined", mode = "Per-key",
         brightness = "9 / 9", speed = "Unavailable", palette = "Unavailable", stored = "Storm (18)" }
 end
 noctalia = {
-    state = { get = function() return state end,
-        set = function(key) assert(key == status.REQUEST); requests = requests + 1 end,
-        watch = function(key, callback) assert(key == status.STATE); watchers[#watchers + 1] = callback end },
+    state = { get = function(key) if key == "aula_f75.operation" then return nil end; return state end,
+        set = function(key, value) if key == "aula_f75.action" then actions[#actions + 1] = value; return end; assert(key == status.REQUEST); requests = requests + 1 end,
+        watch = function(key, callback) if key == "aula_f75.operation" then operationWatcher = callback; return end; assert(key == status.STATE); watchers[#watchers + 1] = callback end },
     togglePanel = function(id) assert(id == "vantesh/aula-f75:panel"); toggles = toggles + 1 end,
     fuzzyScore = function() return 1 end,
     runAsync = function() error("UI must never spawn a process") end,
 }
 local originalRequire = require
-require = function(path) assert(path == "./status.luau"); return status end
+require = function(path) if path == "./operations.luau" then return dofile("aula-f75/operations.luau") end; assert(path == "./status.luau"); return status end
 ui = setmetatable({}, { __index = function(_, kind) return function(props, children) return { kind = kind, props = props, children = children or {} } end end })
 panel = { render = function(tree) rendered = tree end, close = function() closes = closes + 1 end }
 barWidget = {
@@ -51,6 +52,24 @@ publish(ready()); assert(widget.color == "primary" and widget.tooltip:find("Self
 launcher = { setResults = function(query, results) assert(query == "aula"); assert(results[1].id == "open") end }
 dofile("aula-f75/launcher.luau")
 onQuery("aula"); onActivate("open"); assert(toggles == 2)
+-- Native controls: slider onDragEnd has no argument, select indices are zero-based.
+state = ready(); state.controls = { active = 21, brightness = 9, effects = {{id=1,name="Fixed On"},{id=2,name="Respire"},{id=21,name="Self-defined"},{id=0,name="Off"}},power=true }
+open()
+local slider = find(rendered, function(n) return n.kind == "slider" end)
+slider.props.onChange(4); assert(#actions == 0, "drag changes must not launch review")
+slider.props.onDragEnd(); assert(#actions == 1 and actions[1].kind == "brightness" and actions[1].value == 4)
+text("Effect: Self-defined").props.onClick()
+find(rendered, function(n) return n.kind == "input" end).props.onChange("resp")
+local select = find(rendered, function(n) return n.kind == "select" end)
+assert(#select.props.options == 2 and select.props.options[2] == "Respire")
+select.props.onChange(1); assert(actions[2].kind == "effect" and actions[2].value == 2)
+operationWatcher({phase="ready",setting="effect",previous="Self-defined",requested="Respire"})
+assert(text("Review lighting change") and text("Apply Change"))
+text("Cancel").props.onClick(); assert(actions[#actions].action == "cancel")
+operationWatcher({phase="applying"}); assert(not text("Apply Change") and not find(rendered,function(n)return n.kind=="slider"end))
+local beforeActions = #actions; close(); assert(#actions == beforeActions, "closing during apply must not queue writes or cancel apply")
+operationWatcher({phase="idle"})
+state.controls = nil
 require = originalRequire
-assert(requests == 3, "widget, launcher and close do not request hardware reads")
+assert(requests == 4, "widget, launcher and close do not request hardware reads")
 print("AULA F75 UI: panel lifecycle, refresh, errors, widget and launcher passed")

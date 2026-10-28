@@ -102,6 +102,21 @@ function M.read(result, decode)
             if effect(observed) and observed.id == active.id then state.nativeObserved = true end
         end
     end
+    local capabilities = type(d.capabilities) == "table" and d.capabilities or {}
+    local effects, seen = {}, {}
+    for _, e in ipairs(type(report.observed_native_effects) == "table" and report.observed_native_effects or {}) do
+        if effect(e) and e.id > 0 and e.id < 19 and e.id ~= 9 and e.id ~= 14 and e.id ~= 18 and not seen[e.id] then
+            effects[#effects + 1] = { id = e.id, name = M.label(e.name) }; seen[e.id] = true
+        end
+    end
+    effects[#effects + 1] = { id = 21, name = "Self-defined" }
+    effects[#effects + 1] = { id = 0, name = "Off" }
+    state.controls = { active = active and active.id, effects = effects,
+        brightness = active and active.id ~= 0 and capabilities.brightness == true and integer(c.brightness, 9) and c.brightness or nil,
+        speed = active and active.id >= 2 and active.id <= 18 and integer(c.speed, 4) and c.speed or nil,
+        palette = active and active.id >= 1 and active.id <= 18 and integer(c.color_index, 7) and c.color_index or nil,
+        power = capabilities.lighting_power == true,
+        dimmingVerified = capabilities.brightness_visual_verified == true }
     return state
 end
 return M

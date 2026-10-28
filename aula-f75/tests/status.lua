@@ -82,7 +82,7 @@ noctalia = {
     end,
 }
 local originalRequire = require
-require = function(path) assert(path == "./status.luau"); return status end
+require = function(path) if path == "./operations.luau" then return dofile("aula-f75/operations.luau") end; assert(path == "./status.luau"); return status end
 dofile("aula-f75/service.luau")
 require = originalRequire
 expect(#jobs == 0 and values[status.STATE].phase == "idle", "service startup never reads hardware or polls")
