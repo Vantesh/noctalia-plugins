@@ -56,12 +56,12 @@ onQuery("aula"); onActivate("open"); assert(toggles == 2)
 state = ready(); state.controls = { active = 21, brightness = 9, effects = {{id=1,name="Fixed On"},{id=2,name="Respire"},{id=21,name="Self-defined"},{id=0,name="Off"}},power=true }
 open()
 local slider = find(rendered, function(n) return n.kind == "slider" end)
-slider.props.onChange(4); assert(#actions == 0, "drag changes must not launch review")
+slider.props.onChange("4"); assert(#actions == 0, "drag changes must not launch review")
 slider.props.onDragEnd(); assert(#actions == 1 and actions[1].kind == "brightness" and actions[1].value == 4)
 local select = find(rendered, function(n) return n.kind == "select" end)
 assert(#select.props.options == 4 and select.props.selectedIndex == 2)
 assert(not find(rendered,function(n)return n.kind=="input"end), "plain native dropdown has no search/button overlay")
-select.props.onChange(1); assert(actions[2].kind == "effect" and actions[2].value == 2)
+select.props.onChange("1"); assert(actions[2].kind == "effect" and actions[2].value == 2)
 operationWatcher({phase="ready",setting="effect",previous="Self-defined",requested="Respire"})
 assert(text("Review lighting change") and text("Apply Change"))
 text("Cancel").props.onClick(); assert(actions[#actions].action == "cancel")
@@ -108,3 +108,23 @@ for _, e in ipairs({{1,"Fixed On","☀︎"},{2,"Respire","≋"},{4,"Flash Away",
     close()
 end
 print("AULA selector: shared icon labels, native dropdown, comfortable size and selection gates passed")
+
+local r=ready();r.controls={active=1,effects={{id=1,name="Fixed On"},{id=2,name="Respire"}},palette=1,power=true}
+open();publish(r)
+local selector=find(rendered,function(n)return n.kind=="select"end)
+local before=#actions;selector.props.onChange("1")
+assert(#actions==before+1 and actions[#actions].kind=="effect" and actions[#actions].value==2,"native string index must prepare effect review")
+selector.props.onChange("invalid");assert(#actions==before+1)
+local swatches=find(rendered,function(n)return n.props.key=="palette-swatches"end)
+assert(swatches.props.justify=="space_between" and #swatches.children==8)
+for _,circle in ipairs(swatches.children)do
+ assert(circle.props.width==44 and circle.props.height==44 and circle.props.radius==22)
+ assert(circle.props.onClick and not find(circle,function(n)return n.kind=="button"end),"focusable circle has no rectangular ghost button")
+end
+swatches.children[3].props.onClick();assert(actions[#actions].kind=="palette" and actions[#actions].value==2)
+swatches.children[3].props.onHover("true")
+swatches=find(rendered,function(n)return n.props.key=="palette-swatches"end)
+assert(swatches.children[3].props.border=="secondary" and swatches.children[3].props.borderWidth==3)
+assert(swatches.children[3].props.fill=="#3b82f6","hover changes outline, not fill")
+close()
+print("AULA callbacks/palette: native string indices/values, review dispatch, circular targets and even spacing passed")

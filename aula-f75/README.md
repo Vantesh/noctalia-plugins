@@ -60,8 +60,8 @@ remain with the standalone backend; no AULA protocol is implemented here.
 
 The header keeps connection status beside the title. Discrete sliders have one
 left-hand icon, and eight palette circles share one row; Alt+1 through Alt+8
-prepare the corresponding palette review while the panel is open. Random uses
-a multicolor SVG because native buttons cannot take an image background.
+prepare the corresponding palette review while the panel is open. Swatches are native focusable clickable circles with separate hover outlines and
+selected checks, not nested ghost buttons. Random uses a multicolor SVG.
 
 Ordinary views use a directly measured column rather than a growing root scroll
 viewport. The plain native effect dropdown owns its scrolling, selection checkmark and keyboard navigation;

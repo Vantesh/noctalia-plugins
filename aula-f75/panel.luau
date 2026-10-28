@@ -3,6 +3,7 @@ local status = require("./status.luau")
 local operations = require("./operations.luau")
 local snapshot, presented, opened = nil, nil, false
 local op = { phase = "idle" }
+local hoveredPalette
 local render
 local palette = { "Red", "Green", "Blue", "Yellow", "Magenta", "Cyan", "White", "Random" }
 -- These are the palette colors themselves, not interface/theme colors.
@@ -96,7 +97,10 @@ render = function()
         if #options == 0 then options[1] = effectLabel(c and c.active, view.active or "Unknown") end
         table.insert(rows, ui.select({ key = "effect-select", options = options, selectedIndex = selectedIndex,
             enabled = enabled, controlSize = "lg", height = 44,
-            onChange = function(index) if ids[index] ~= nil then choose("effect", ids[index]) end end }))
+            onChange = function(index)
+                index = tonumber(index)
+                if index and ids[index] ~= nil then choose("effect", ids[index]) end
+            end }))
         if c then
             for _, item in ipairs({ { "brightness", 9, "Brightness", "sun" }, { "speed", 4, "Animation speed", "wind" } }) do
                 local kind, maximum, name, icon = item[1], item[2], item[3], item[4]
@@ -106,7 +110,7 @@ render = function()
                     table.insert(rows, ui.row({ gap = 10, align = "center" }, {
                         ui.glyph({ name = icon, size = 17, color = "primary" }),
                         ui.slider({ key = kind .. "-" .. c[kind], min = 0, max = maximum, step = 1, controlSize = "sm", flexGrow = 1,
-                            value = c[kind], enabled = enabled, onChange = function(value) draft = value end,
+                            value = c[kind], enabled = enabled, onChange = function(value) draft = tonumber(value) end,
                             onDragEnd = function() choose(kind, draft) end }),
                     }))
                 end
@@ -123,18 +127,23 @@ render = function()
                     local value, selected = index - 1, index - 1 == c.palette
                     local children = {}
                     if index == 8 then
-                        children[1] = ui.image({ path = "palette-random.svg", width = 32, height = 32, fit = "contain", radius = 16,
-                            tooltip = "Random (Alt+8)", onClick = function() if enabled then choose("palette", value) end end })
-                    else
-                        children[1] = ui.button({ key = "palette-" .. value, glyph = selected and "check" or nil, glyphSize = 12,
-                            variant = "ghost", controlSize = "sm", width = 32, height = 32,
-                            tooltip = name .. (selected and " (selected)" or "") .. " (Alt+" .. index .. ")", enabled = enabled,
-                            onClick = function() choose("palette", value) end })
+                        children[1] = ui.image({ path = "palette-random.svg", width = 40, height = 40, fit = "contain", radius = 20 })
+                    elseif selected then
+                        children[1] = ui.glyph({ name = "check", size = 15, color = "on_primary" })
                     end
-                    swatches[#swatches + 1] = ui.row({ width = 38, height = 38, radius = 19, padding = 2, gap = 0, align = "center", justify = "center",
-                        fill = colors[index], border = selected and "primary" or "outline_variant", borderWidth = selected and 2 or 1, tooltip = name }, children)
+                    local hovered = hoveredPalette == value
+                    swatches[#swatches + 1] = ui.row({ key = "palette-" .. value, width = 44, height = 44, radius = 22,
+                        gap = 0, align = "center", justify = "center", fill = colors[index],
+                        border = hovered and "secondary" or selected and "primary" or "outline_variant",
+                        borderWidth = hovered and 3 or selected and 2 or 1,
+                        tooltip = name .. (selected and " (selected)" or "") .. " (Alt+" .. index .. ")",
+                        onClick = enabled and function() choose("palette", value) end or nil,
+                        onHover = enabled and function(inside)
+                            local nextHover = inside == "true" and value or nil
+                            if nextHover ~= hoveredPalette then hoveredPalette = nextHover; render() end
+                        end or nil }, children)
                 end
-                table.insert(rows, ui.row({ key = "palette-swatches", gap = 7, align = "center" }, swatches))
+                table.insert(rows, ui.row({ key = "palette-swatches", gap = 0, justify = "space_between", align = "center" }, swatches))
             end
         else
             table.insert(rows, field("Brightness", view.brightness))
@@ -167,7 +176,7 @@ function onOpen()
     status.request()
 end
 function onClose()
-    opened, presented = false, nil
+    opened, presented, hoveredPalette = false, nil, nil
     if op.phase == "ready" or op.phase == "reviewing" then cancel() end
 end
 noctalia.state.watch(operations.KEY, function(value) op = value; render() end)
