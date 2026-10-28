@@ -64,8 +64,12 @@ prepare the corresponding palette review while the panel is open. Random uses
 a multicolor SVG because native buttons cannot take an image background.
 
 Ordinary views use a directly measured column rather than a growing root scroll
-viewport. The plain native effect dropdown owns its scrolling and keyboard navigation;
-it has no search field or custom clickable overlay. During refresh, the last
+viewport. The plain native effect dropdown owns its scrolling, selection checkmark and keyboard navigation;
+it has no search field or custom clickable overlay. API 43 accepts text options
+only, so one shared symbol mapping supplies monochrome effect icons inside both
+the trigger and list labels. The 44 px trigger has more breathing room. Popup row padding remains
+Noctalia-owned: API 43 exposes no per-row padding or font-size override. The panel is 480 px wide and remains
+content-sized; popup placement and screen-edge handling stay native. During refresh, the last
 verified sections stay visible but disabled to preserve their measured layout;
 an error or disconnect clears them. The first read without cached status still
 uses a compact loading view. Very small outputs can clamp the panel; a complete

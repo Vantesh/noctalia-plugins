@@ -28,7 +28,7 @@ local function find(tree, predicate)
     if predicate(tree) then return tree end
     for _, child in ipairs(tree.children) do local found = find(child, predicate); if found then return found end end
 end
-local function text(value) return find(rendered, function(n) return n.props.text == value or (n.props.options and n.props.options[(n.props.selectedIndex or 0) + 1] == value) end) end
+local function text(value) return find(rendered, function(n) return n.props.text == value or (n.props.options and n.props.options[(n.props.selectedIndex or 0) + 1]:sub(-#value) == value) end) end
 dofile("aula-f75/panel.luau")
 local open, close = onOpen, onClose
 assert(rendered == nil and requests == 0)
@@ -94,3 +94,17 @@ for _, id in ipairs({1,2,3,21,0}) do
     close()
 end
 print("AULA layout: intrinsic root, aligned header, dynamic views, single-row palette and stable refresh passed")
+
+-- One native control owns icon/name/chevron and reuses option labels in its popup.
+for _, e in ipairs({{1,"Fixed On","☀︎"},{2,"Respire","≋"},{4,"Flash Away","ϟ"},{21,"Self-defined","⚙︎"}}) do
+    local r=ready();r.active=e[2];r.controls={active=e[1],effects={{id=e[1],name=e[2]}},power=true}
+    open();publish(r)
+    local selector=find(rendered,function(n)return n.kind=="select"end)
+    assert(selector.props.options[1]==e[3].."  "..e[2] and selector.props.selectedIndex==0)
+    assert(selector.props.controlSize=="lg" and selector.props.height>=40)
+    assert(not find(rendered,function(n)return n.props.key=="effect-picker"end),"no icon outside dropdown boundary")
+    assert(not find(rendered,function(n)return n.kind=="input"end),"no search field")
+    local before=#actions;selector.props.onChange(0);assert(#actions==before,"selecting active effect is a no-op")
+    close()
+end
+print("AULA selector: shared icon labels, native dropdown, comfortable size and selection gates passed")

@@ -7,7 +7,16 @@ local render
 local palette = { "Red", "Green", "Blue", "Yellow", "Magenta", "Cyan", "White", "Random" }
 -- These are the palette colors themselves, not interface/theme colors.
 local colors = { "#ef4444", "#22c55e", "#3b82f6", "#eab308", "#d946ef", "#06b6d4", "#ffffff", "surface_container" }
-local effectIcons = { [0] = "moon", [1] = "sun", [2] = "wave-sine", [3] = "rainbow", [21] = "settings" }
+-- API 43 ui.select exposes text options, not glyph/row props. Text-presentation
+-- symbols keep both trigger and popup on the same native keyboard/scroll path.
+local effectIcons = {
+    [0] = "◐", [1] = "☀︎", [2] = "≋", [3] = "⌒", [4] = "ϟ", [5] = "☂︎",
+    [6] = "◌", [7] = "◎", [8] = "✧", [10] = "↝", [11] = "↠", [12] = "✺",
+    [13] = "∿", [15] = "✣", [16] = "⇣", [17] = "❀", [21] = "⚙︎",
+}
+local function effectLabel(id, name)
+    return (effectIcons[id] or "◇") .. "  " .. name
+end
 local function choose(kind, value)
     if kind == "effect" and value == 0 then kind, value = "off", nil end
     if op.phase ~= "idle" or not operations.allowed(snapshot, kind, value) then return end
@@ -82,15 +91,12 @@ render = function()
         for _, e in ipairs(c and c.effects or {}) do
             ids[#options] = e.id
             if c and e.id == c.active then selectedIndex = #options end
-            options[#options + 1] = e.name
+            options[#options + 1] = effectLabel(e.id, e.name)
         end
-        if #options == 0 then options[1] = view.active or "Unknown" end
-        table.insert(rows, ui.row({ key = "effect-picker", gap = 8, align = "center" }, {
-            ui.glyph({ name = effectIcons[c and c.active] or "sparkles", size = 20, color = "primary" }),
-            ui.select({ key = "effect-select", options = options, selectedIndex = selectedIndex, flexGrow = 1,
-                enabled = enabled, controlSize = "sm",
-                onChange = function(index) if ids[index] ~= nil then choose("effect", ids[index]) end end }),
-        }))
+        if #options == 0 then options[1] = effectLabel(c and c.active, view.active or "Unknown") end
+        table.insert(rows, ui.select({ key = "effect-select", options = options, selectedIndex = selectedIndex,
+            enabled = enabled, controlSize = "lg", height = 44,
+            onChange = function(index) if ids[index] ~= nil then choose("effect", ids[index]) end end }))
         if c then
             for _, item in ipairs({ { "brightness", 9, "Brightness", "sun" }, { "speed", 4, "Animation speed", "wind" } }) do
                 local kind, maximum, name, icon = item[1], item[2], item[3], item[4]
