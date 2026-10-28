@@ -7,9 +7,13 @@ widget. Configuration is never executed or modified.
 
 ## Requirements
 
-Noctalia plugin API 42 (v5.4.0), a readable Hyprland Lua configuration,
+Noctalia plugin API 43 (v5.4.0), a readable Hyprland Lua configuration,
 `fontconfig` (`fc-match`), and a Nerd Font such as Symbols Nerd Font Mono.
 Classic `.conf` configurations are unsupported.
+
+API 43 uses `surface_container` and `outline_variant` for the existing fills
+and borders, preserving their colors and opacity. The spacious fixed-size
+cheatsheet and scrolling behavior are unchanged.
 
 ## Usage
 
